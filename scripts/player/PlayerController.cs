@@ -25,6 +25,7 @@ public partial class PlayerController : CharacterBody3D
     private CanvasLayer _hudCanvas = null!;
     private Label _inventoryLabel = null!;
     private Label _controlsLabel = null!;
+    private Label _crosshair = null!;
     private InventoryManager? _inventoryManager;
 
     public override void _Ready()
@@ -46,6 +47,22 @@ public partial class PlayerController : CharacterBody3D
             Layer = 10
         };
         AddChild(_hudCanvas);
+
+        // Crosshair (center)
+        _crosshair = new Label
+        {
+            AnchorsPreset = (int)Control.LayoutPreset.Center,
+            OffsetLeft = -10,
+            OffsetTop = -10,
+            OffsetRight = 10,
+            OffsetBottom = 10,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Text = "+"
+        };
+        _crosshair.AddThemeColorOverride("font_color", new Color(0.95f, 0.95f, 0.95f, 0.85f));
+        _crosshair.AddThemeFontSizeOverride("font_size", 24);
+        _hudCanvas.AddChild(_crosshair);
 
         // Interaction prompt (bottom center)
         _interactionLabel = new Label

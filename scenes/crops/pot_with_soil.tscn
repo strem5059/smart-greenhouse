@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3]
+
+[sub_resource type="CylinderMesh" id="mesh_pot"]
+top_radius = 0.22
+bottom_radius = 0.18
+height = 0.18
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="mat_pot"]
+albedo_color = Color(0.75, 0.75, 0.78, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="mesh_soil"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 0.04
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="mat_soil"]
+albedo_color = Color(0.35, 0.22, 0.13, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="mat_soil_dark"]
+albedo_color = Color(0.25, 0.15, 0.08, 1)
+roughness = 0.95
+
+[node name="PotWithSoil" type="Node3D"]
+
+[node name="Pot" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_pot")
+surface_material_override/0 = SubResource("mat_pot")
+
+[node name="Soil" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+mesh = SubResource("mesh_soil")
+surface_material_override/0 = SubResource("mat_soil")
+
+[node name="SoilCenter" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.095, 0)
+mesh = SubResource("mesh_soil")
+surface_material_override/0 = SubResource("mat_soil_dark")

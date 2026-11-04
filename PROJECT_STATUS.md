@@ -45,10 +45,20 @@ tests/
 - `scripts/inventory/InventoryManager.cs` — inventario básico.
 - `scripts/interfaces/IInteractable.cs` — interfaz de interacción.
 
-### Funcionalidades terminadas (Día 2 + actualización visual)
+### Correcciones realizadas en Fase 2
+- Cámara primera persona rebajada a altura de ojos (`Head` en y=1.45).
+- Cámara tercera persona colocada detrás del personaje (`ThirdPersonPivot` en z=-4) sin rotación invertida.
+- Crosshair central (`+`) visible en primera y tercera persona.
+- Raycast de interacción desde el centro de la cámara activa.
+- Indicador contextual `[E] Plantar lechuga` / `[E] Regar` / `[E] Fertilizar` / `[E] Estado` / `[E] Cosechar` según el estado de la estación.
+- Estaciones con maceta y tierra café visible (`pot_with_soil.tscn`), separadas de la vegetación.
+- Vegetación instanciada únicamente al plantar (`lettuce.tscn`).
+- 4 etapas visuales diferenciadas: semilla, plántula, crecimiento y madura.
+
+### Funcionalidades terminadas (Día 2 + correcciones visuales)
 - Tuberías reorganizadas: líneas principales en el techo, bajantes y ramales sobre cada mesa.
-- Interacción con `E`: detección por raycast e indicador contextual en pantalla.
-- HUD minimalista: indicador contextual, controles adicionales (`V`, `Esc`) e inventario resumido actualizado.
+- Interacción con `E`: detección por raycast desde el centro de la cámara activa e indicador contextual en pantalla.
+- HUD minimalista: crosshair central, indicador contextual, controles (`V`, `Esc`) e inventario resumido actualizado.
 - Plantar lechuga en estaciones de cultivo (consume 1 semilla).
 - 4 etapas de crecimiento: Semilla, Plántula, Crecimiento, Madura.
 - Maceta con tierra visible: las estaciones comienzan vacías y muestran vegetación progresivamente.

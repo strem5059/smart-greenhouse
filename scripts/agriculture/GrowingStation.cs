@@ -8,6 +8,7 @@ namespace SmartGreenhouse.Agriculture;
 public partial class GrowingStation : StaticBody3D, IInteractable
 {
     [Export] public PackedScene? PlantScene;
+    [Export] public PackedScene? PotWithSoilScene;
     [Export] public float WaterAmount = 30.0f;
     [Export] public float NutrientAmount = 30.0f;
 
@@ -19,6 +20,12 @@ public partial class GrowingStation : StaticBody3D, IInteractable
     {
         _inventory = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
         _growthSimulator = GetNodeOrNull<GrowthSimulator>("/root/GrowthSimulator");
+
+        if (PotWithSoilScene != null)
+        {
+            var pot = PotWithSoilScene.Instantiate<Node3D>();
+            AddChild(pot);
+        }
     }
 
     public string GetInteractionPrompt()
@@ -93,7 +100,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
         var instance = PlantScene.Instantiate<PlantController>();
         instance.Data = new CropData();
         AddChild(instance);
-        instance.Position = new Vector3(0, 1.22f, 0);
+        instance.Position = new Vector3(0, 0.1f, 0);
         _plant = instance;
 
         _growthSimulator?.RegisterPlant(_plant);

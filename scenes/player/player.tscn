@@ -1,38 +1,37 @@
-[gd_scene load_steps=6 format=3 uid="uid://byej6stpvb5no"]
+[gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" uid="uid://c4o8wojif7quc" path="res://scripts/player/PlayerController.cs" id="scr_ad472027b"]
+[ext_resource type="Script" path="res://scripts/player/PlayerController.cs" id="scr_b60d71381"]
 
-[sub_resource type="CapsuleShape3D" id="shape_beb2526"]
+[sub_resource type="CapsuleShape3D" id="shape_f359221"]
 height = 1.8
 radius = 0.4
 
-[sub_resource type="CapsuleMesh" id="mesh_5f4b0d81"]
+[sub_resource type="CapsuleMesh" id="mesh_49ef25b7"]
 height = 1.8
 radius = 0.4
 
-[sub_resource type="StandardMaterial3D" id="mat_f4fb2427f"]
+[sub_resource type="StandardMaterial3D" id="mat_593d4b6ff"]
 albedo_color = Color(0.2, 0.5, 0.9, 1)
 
-[sub_resource type="Environment" id="env_4337a92b1"]
+[sub_resource type="Environment" id="env_b5a952f64"]
 
 [node name="Player" type="CharacterBody3D"]
-script = ExtResource("scr_ad472027b")
+script = ExtResource("scr_b60d71381")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("shape_beb2526")
+shape = SubResource("shape_f359221")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("mesh_5f4b0d81")
-surface_material_override/0 = SubResource("mat_f4fb2427f")
+mesh = SubResource("mesh_49ef25b7")
+surface_material_override/0 = SubResource("mat_593d4b6ff")
 
 [node name="Head" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 
 [node name="FirstPersonCamera" type="Camera3D" parent="Head"]
 current = true
 
 [node name="ThirdPersonPivot" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -4)
 
 [node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
