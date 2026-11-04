@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/PlayerController.cs" id="scr_b60d71381"]
 
@@ -12,8 +12,6 @@ radius = 0.4
 
 [sub_resource type="StandardMaterial3D" id="mat_593d4b6ff"]
 albedo_color = Color(0.2, 0.5, 0.9, 1)
-
-[sub_resource type="Environment" id="env_b5a952f64"]
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("scr_b60d71381")
@@ -32,6 +30,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 current = true
 
 [node name="ThirdPersonPivot" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -4)
 
-[node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot"]
+[node name="ThirdPersonPitch" type="Node3D" parent="ThirdPersonPivot"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="ThirdPersonPivot/ThirdPersonPitch"]
+spring_length = 4.0
+
+[node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot/ThirdPersonPitch/SpringArm3D"]

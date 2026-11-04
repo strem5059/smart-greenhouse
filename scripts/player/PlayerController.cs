@@ -10,9 +10,16 @@ public partial class PlayerController : CharacterBody3D
     [Export] public float JumpVelocity = 4.5f;
     [Export] public float MouseSensitivity = 0.003f;
     [Export] public float GravityScale = 1.0f;
+    [Export] public float TurnSpeed = 10.0f;
+    [Export] public float ThirdPersonHeight = 1.6f;
+
+    private const float FirstPersonPitchLimitDeg = 80.0f;
+    private const float ThirdPersonPitchLimitDeg = 60.0f;
 
     private Node3D _head = null!;
     private Camera3D _firstPersonCamera = null!;
+    private Node3D _thirdPersonPivot = null!;
+    private Node3D _thirdPersonPitch = null!;
     private Camera3D _thirdPersonCamera = null!;
 
     private enum CameraMode { FirstPerson, ThirdPerson }
@@ -25,18 +32,21 @@ public partial class PlayerController : CharacterBody3D
     private CanvasLayer _hudCanvas = null!;
     private Label _inventoryLabel = null!;
     private Label _controlsLabel = null!;
-    private Label _crosshair = null!;
+    private Crosshair _crosshair = null!;
     private InventoryManager? _inventoryManager;
 
     public override void _Ready()
     {
         _head = GetNode<Node3D>("Head");
         _firstPersonCamera = GetNode<Camera3D>("Head/FirstPersonCamera");
-        _thirdPersonCamera = GetNode<Camera3D>("ThirdPersonPivot/ThirdPersonCamera");
+        _thirdPersonPivot = GetNode<Node3D>("ThirdPersonPivot");
+        _thirdPersonPitch = GetNode<Node3D>("ThirdPersonPivot/ThirdPersonPitch");
+        _thirdPersonCamera = GetNode<Camera3D>("ThirdPersonPivot/ThirdPersonPitch/SpringArm3D/ThirdPersonCamera");
+        _thirdPersonPivot.TopLevel = true;
         RegisterInputActions();
         _inventoryManager = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
         SetupHUD();
-        Input.MouseMode = Input.MouseModeEnum.Captured;
+        SetMouseCaptured(true);
         UpdateCameraMode();
     }
 
@@ -48,23 +58,10 @@ public partial class PlayerController : CharacterBody3D
         };
         AddChild(_hudCanvas);
 
-        // Crosshair (center)
-        _crosshair = new Label
-        {
-            AnchorsPreset = (int)Control.LayoutPreset.Center,
-            OffsetLeft = -10,
-            OffsetTop = -10,
-            OffsetRight = 10,
-            OffsetBottom = 10,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Text = "+"
-        };
-        _crosshair.AddThemeColorOverride("font_color", new Color(0.95f, 0.95f, 0.95f, 0.85f));
-        _crosshair.AddThemeFontSizeOverride("font_size", 24);
+        _crosshair = new Crosshair();
         _hudCanvas.AddChild(_crosshair);
+        _crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
-        // Interaction prompt (bottom center)
         _interactionLabel = new Label
         {
             AnchorsPreset = (int)Control.LayoutPreset.CenterBottom,
@@ -78,7 +75,6 @@ public partial class PlayerController : CharacterBody3D
         _hudCanvas.AddChild(_interactionLabel);
         _interactionLabel.Hide();
 
-        // Controls hint (top right)
         _controlsLabel = new Label
         {
             AnchorsPreset = (int)Control.LayoutPreset.TopRight,
@@ -93,7 +89,6 @@ public partial class PlayerController : CharacterBody3D
         _controlsLabel.AddThemeFontSizeOverride("font_size", 14);
         _hudCanvas.AddChild(_controlsLabel);
 
-        // Inventory summary (top left)
         _inventoryLabel = new Label
         {
             AnchorsPreset = (int)Control.LayoutPreset.TopLeft,
@@ -134,13 +129,24 @@ public partial class PlayerController : CharacterBody3D
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion mouseMotion && _cameraMode == CameraMode.FirstPerson)
+        if (@event is InputEventMouseMotion mouseMotion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
-            RotateY(-mouseMotion.Relative.X * MouseSensitivity);
-            _head.RotateX(-mouseMotion.Relative.Y * MouseSensitivity);
-            Vector3 headRot = _head.Rotation;
-            headRot.X = Mathf.Clamp(headRot.X, Mathf.DegToRad(-80), Mathf.DegToRad(80));
-            _head.Rotation = headRot;
+            if (_cameraMode == CameraMode.FirstPerson)
+            {
+                RotateY(-mouseMotion.Relative.X * MouseSensitivity);
+                _head.RotateX(-mouseMotion.Relative.Y * MouseSensitivity);
+                Vector3 headRot = _head.Rotation;
+                headRot.X = Mathf.Clamp(headRot.X, Mathf.DegToRad(-FirstPersonPitchLimitDeg), Mathf.DegToRad(FirstPersonPitchLimitDeg));
+                _head.Rotation = headRot;
+            }
+            else
+            {
+                _thirdPersonPivot.RotateY(-mouseMotion.Relative.X * MouseSensitivity);
+                _thirdPersonPitch.RotateX(-mouseMotion.Relative.Y * MouseSensitivity);
+                Vector3 pitchRot = _thirdPersonPitch.Rotation;
+                pitchRot.X = Mathf.Clamp(pitchRot.X, Mathf.DegToRad(-ThirdPersonPitchLimitDeg), Mathf.DegToRad(ThirdPersonPitchLimitDeg));
+                _thirdPersonPitch.Rotation = pitchRot;
+            }
         }
 
         if (@event.IsActionPressed("change_camera"))
@@ -150,7 +156,7 @@ public partial class PlayerController : CharacterBody3D
 
         if (@event.IsActionPressed("ui_cancel"))
         {
-            Input.MouseMode = Input.MouseModeEnum.Visible;
+            SetMouseCaptured(Input.MouseMode != Input.MouseModeEnum.Captured);
         }
 
         if (@event.IsActionPressed("interact") && _currentInteractable != null)
@@ -174,7 +180,8 @@ public partial class PlayerController : CharacterBody3D
         }
 
         Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_back");
-        Vector3 direction = Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y).Normalized();
+        Basis moveBasis = _cameraMode == CameraMode.ThirdPerson ? _thirdPersonPivot.GlobalTransform.Basis : Transform.Basis;
+        Vector3 direction = moveBasis * new Vector3(inputDir.X, 0, inputDir.Y).Normalized();
 
         if (direction != Vector3.Zero)
         {
@@ -189,6 +196,14 @@ public partial class PlayerController : CharacterBody3D
 
         Velocity = velocity;
         MoveAndSlide();
+
+        if (_cameraMode == CameraMode.ThirdPerson && direction != Vector3.Zero)
+        {
+            float targetYaw = Mathf.Atan2(-direction.X, -direction.Z);
+            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, targetYaw, TurnSpeed * (float)delta), 0);
+        }
+
+        _thirdPersonPivot.GlobalPosition = GlobalPosition + new Vector3(0, ThirdPersonHeight, 0);
         UpdateInteraction();
         UpdateInventoryDisplay();
     }
@@ -214,14 +229,15 @@ public partial class PlayerController : CharacterBody3D
             return;
         }
 
-        var spaceState = GetWorld3D().DirectSpaceState;
         var from = camera.GlobalPosition;
-        var to = from + (-camera.GlobalTransform.Basis.Z) * InteractionRange;
+        float cameraOffset = _cameraMode == CameraMode.ThirdPerson ? from.DistanceTo(GlobalPosition) : 0.0f;
+        var to = from + (-camera.GlobalTransform.Basis.Z) * (InteractionRange + cameraOffset);
         var query = PhysicsRayQueryParameters3D.Create(from, to);
         query.CollideWithAreas = true;
         query.CollideWithBodies = true;
+        query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
 
-        var result = spaceState.IntersectRay(query);
+        var result = GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (result.Count > 0 && result["collider"].AsGodotObject() is IInteractable interactable)
         {
             _currentInteractable = interactable;
@@ -252,7 +268,19 @@ public partial class PlayerController : CharacterBody3D
 
     private void ToggleCamera()
     {
-        _cameraMode = _cameraMode == CameraMode.FirstPerson ? CameraMode.ThirdPerson : CameraMode.FirstPerson;
+        if (_cameraMode == CameraMode.FirstPerson)
+        {
+            _thirdPersonPivot.Rotation = new Vector3(0, Rotation.Y, 0);
+            _thirdPersonPitch.Rotation = new Vector3(Mathf.Clamp(_head.Rotation.X, Mathf.DegToRad(-ThirdPersonPitchLimitDeg), Mathf.DegToRad(ThirdPersonPitchLimitDeg)), 0, 0);
+            _cameraMode = CameraMode.ThirdPerson;
+        }
+        else
+        {
+            Rotation = new Vector3(0, _thirdPersonPivot.Rotation.Y, 0);
+            _head.Rotation = new Vector3(Mathf.Clamp(_thirdPersonPitch.Rotation.X, Mathf.DegToRad(-FirstPersonPitchLimitDeg), Mathf.DegToRad(FirstPersonPitchLimitDeg)), 0, 0);
+            _cameraMode = CameraMode.FirstPerson;
+        }
+
         UpdateCameraMode();
     }
 
@@ -260,5 +288,11 @@ public partial class PlayerController : CharacterBody3D
     {
         _firstPersonCamera.Current = _cameraMode == CameraMode.FirstPerson;
         _thirdPersonCamera.Current = _cameraMode == CameraMode.ThirdPerson;
+    }
+
+    private void SetMouseCaptured(bool captured)
+    {
+        Input.MouseMode = captured ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
+        _crosshair.Visible = captured;
     }
 }

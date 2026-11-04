@@ -94,8 +94,17 @@ Compilación correcta.
 - `test_scene.tscn` — carga de escena y ejecución: **passed**.
 - `test_agriculture.gd` — plantar, crecer hasta madurez y cosechar: **passed**.
 
+### Corrección de cámaras, cursor e interacción (Fase 2)
+- Causas: la cámara de tercera persona estaba de espaldas al personaje (`z=-4` sin giro) y no tenía órbita; ESC solo ocultaba el cursor; el rayo no excluía al jugador; el apuntador se dibujaba con un `Label`.
+- Tercera persona: `ThirdPersonPivot` (top level, sigue al jugador) > `ThirdPersonPitch` > `SpringArm3D` > `ThirdPersonCamera`. El ratón orbita en yaw y pitch; el personaje gira hacia la dirección de movimiento.
+- Primera persona: sin cambios de comportamiento.
+- Cursor: ESC alterna entre `Captured` y `Visible` desde un único método (`SetMouseCaptured`). La rotación solo se aplica con el cursor capturado.
+- Apuntador: `scripts/player/Crosshair.cs` (`Control` con `_Draw`), visible solo con el cursor capturado.
+- Interacción: rayo desde la cámara activa, excluye al jugador; en tercera persona el alcance se suma a la distancia cámara–jugador. Textos según especificación.
+- Pendiente de verificación manual: giro del SpringArm (se asume +Z), visibilidad del apuntador y mensajes en el editor.
+
 ### Estado
-Día 2 terminado.
+Día 2 terminado (correcciones de Fase 2 pendientes de validación manual).
 
 ### Siguiente paso (Día 3)
 Economía y panel: saldo, compra/venta, almacén e interfaz administrativa.

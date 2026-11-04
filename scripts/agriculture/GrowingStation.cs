@@ -39,7 +39,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 
         if (_plant.Data.IsMature)
         {
-            return "[E] Cosechar";
+            return "[E] Cosechar lechuga";
         }
 
         if (_plant.Data.Water < 20.0f)
@@ -52,7 +52,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
             return "[E] Fertilizar";
         }
 
-        return $"[E] Estado: {_plant.Data.Stage} ({_plant.Data.GrowthProgress:F0}%)";
+        return "[E] Estado: consultar planta";
     }
 
     public void Interact()
