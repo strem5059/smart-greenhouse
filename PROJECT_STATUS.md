@@ -103,6 +103,12 @@ Compilación correcta.
 - Interacción: rayo desde la cámara activa, excluye al jugador; en tercera persona el alcance se suma a la distancia cámara–jugador. Textos según especificación.
 - Pendiente de verificación manual: giro del SpringArm (se asume +Z), visibilidad del apuntador y mensajes en el editor.
 
+### Interacción y recompensa de semillas
+- Causa del mensaje ausente: las bajantes y ramales de tubería (`PipeDrop_*`, `PipeFeeder_*`) tenían colisión sobre el centro de cada estación y el rayo las golpeaba primero. Se eliminaron los 48 nodos de tubería de mesa (y sus recursos); se conservan las tuberías del techo.
+- Cosecha: además de la lechuga, entrega 1 semilla (`lettuce_seeds`). Verificado en prueba headless (4 → 5).
+- Pendiente de validación manual: mensajes `[E]` en el editor.
+- Pendiente de decisión: texto de cosecha (`[E] Cosechar lechuga` o `[E] Cosechar`).
+
 ### Estado
 Día 2 terminado (correcciones de Fase 2 pendientes de validación manual).
 
