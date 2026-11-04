@@ -109,6 +109,11 @@ Compilación correcta.
 - Pendiente de validación manual: mensajes `[E]` en el editor.
 - Pendiente de decisión: texto de cosecha (`[E] Cosechar lechuga` o `[E] Cosechar`).
 
+### Macetas y recompensa
+- Cada mesa tiene 3 macetas independientes (24 `GrowingStation` en total, separadas 0.8 m sobre el canal). Cada una tiene su propia planta, agua, fertilizante, crecimiento y cosecha.
+- Cosecha: 1 lechuga y 2 semillas (`lettuce_seeds`).
+- Pendiente de validación manual: posición de las macetas sobre el canal y mensaje `[E]` por maceta.
+
 ### Estado
 Día 2 terminado (correcciones de Fase 2 pendientes de validación manual).
 

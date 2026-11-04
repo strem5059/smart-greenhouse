@@ -142,7 +142,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
         _plant.QueueFree();
         _plant = null;
         _inventory?.AddItem("lettuce_harvested", 1);
-        _inventory?.AddItem("lettuce_seeds", 1);
+        _inventory?.AddItem("lettuce_seeds", 2);
         GD.Print("[Estación] Lechuga cosechada.");
     }
 }

@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://dyxpod1iw716f"]
 
 [sub_resource type="CylinderMesh" id="mesh_pot"]
 top_radius = 0.22
@@ -24,18 +24,18 @@ roughness = 0.95
 albedo_color = Color(0.25, 0.15, 0.08, 1)
 roughness = 0.95
 
-[node name="PotWithSoil" type="Node3D"]
+[node name="PotWithSoil" type="Node3D" unique_id=749665748]
 
-[node name="Pot" type="MeshInstance3D" parent="."]
+[node name="Pot" type="MeshInstance3D" parent="." unique_id=412242341]
 mesh = SubResource("mesh_pot")
 surface_material_override/0 = SubResource("mat_pot")
 
-[node name="Soil" type="MeshInstance3D" parent="."]
+[node name="Soil" type="MeshInstance3D" parent="." unique_id=1285268626]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
 mesh = SubResource("mesh_soil")
 surface_material_override/0 = SubResource("mat_soil")
 
-[node name="SoilCenter" type="MeshInstance3D" parent="."]
+[node name="SoilCenter" type="MeshInstance3D" parent="." unique_id=874194373]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.095, 0)
 mesh = SubResource("mesh_soil")
 surface_material_override/0 = SubResource("mat_soil_dark")

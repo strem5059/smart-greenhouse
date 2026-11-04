@@ -1,39 +1,39 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://cufncs8ygidn2"]
 
-[ext_resource type="Script" path="res://scripts/player/PlayerController.cs" id="scr_b60d71381"]
+[ext_resource type="Script" uid="uid://c4o8wojif7quc" path="res://scripts/player/PlayerController.cs" id="scr_b60d71381"]
 
 [sub_resource type="CapsuleShape3D" id="shape_f359221"]
-height = 1.8
 radius = 0.4
+height = 1.8
 
 [sub_resource type="CapsuleMesh" id="mesh_49ef25b7"]
-height = 1.8
 radius = 0.4
+height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="mat_593d4b6ff"]
 albedo_color = Color(0.2, 0.5, 0.9, 1)
 
-[node name="Player" type="CharacterBody3D"]
+[node name="Player" type="CharacterBody3D" unique_id=2031769751]
 script = ExtResource("scr_b60d71381")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1982055259]
 shape = SubResource("shape_f359221")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1300958567]
 mesh = SubResource("mesh_49ef25b7")
 surface_material_override/0 = SubResource("mat_593d4b6ff")
 
-[node name="Head" type="Node3D" parent="."]
+[node name="Head" type="Node3D" parent="." unique_id=876894068]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 
-[node name="FirstPersonCamera" type="Camera3D" parent="Head"]
+[node name="FirstPersonCamera" type="Camera3D" parent="Head" unique_id=95450307]
 current = true
 
-[node name="ThirdPersonPivot" type="Node3D" parent="."]
+[node name="ThirdPersonPivot" type="Node3D" parent="." unique_id=241801659]
 
-[node name="ThirdPersonPitch" type="Node3D" parent="ThirdPersonPivot"]
+[node name="ThirdPersonPitch" type="Node3D" parent="ThirdPersonPivot" unique_id=1190697484]
 
-[node name="SpringArm3D" type="SpringArm3D" parent="ThirdPersonPivot/ThirdPersonPitch"]
+[node name="SpringArm3D" type="SpringArm3D" parent="ThirdPersonPivot/ThirdPersonPitch" unique_id=939745093]
 spring_length = 4.0
 
-[node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot/ThirdPersonPitch/SpringArm3D"]
+[node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot/ThirdPersonPitch/SpringArm3D" unique_id=1809878924]

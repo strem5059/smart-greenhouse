@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bln4ddcbtlc4t"]
 
-[ext_resource type="PackedScene" uid="uid://bxfimkgm2mm8r" path="res://scenes/world/greenhouse.tscn" id="1_abc123def4567"]
+[ext_resource type="PackedScene" uid="uid://c5vu877kjgyp7" path="res://scenes/world/greenhouse.tscn" id="1_abc123def4567"]
 
 [sub_resource type="GDScript" id="GDScript_abc123def4567"]
 script/source = "extends Timer
