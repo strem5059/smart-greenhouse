@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 InventoryManager="*res://scripts/inventory/InventoryManager.cs"
 GrowthSimulator="*res://scripts/agriculture/GrowthSimulator.cs"
+EconomyManager="*res://scripts/economy/EconomyManager.cs"
 
 [display]
 

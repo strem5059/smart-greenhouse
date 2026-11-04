@@ -34,6 +34,7 @@ public partial class PlayerController : CharacterBody3D
     private Label _controlsLabel = null!;
     private Crosshair _crosshair = null!;
     private InventoryManager? _inventoryManager;
+    private bool _inputLocked;
 
     public override void _Ready()
     {
@@ -43,6 +44,7 @@ public partial class PlayerController : CharacterBody3D
         _thirdPersonPitch = GetNode<Node3D>("ThirdPersonPivot/ThirdPersonPitch");
         _thirdPersonCamera = GetNode<Camera3D>("ThirdPersonPivot/ThirdPersonPitch/SpringArm3D/ThirdPersonCamera");
         _thirdPersonPivot.TopLevel = true;
+        AddToGroup("player");
         RegisterInputActions();
         _inventoryManager = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
         SetupHUD();
@@ -91,17 +93,15 @@ public partial class PlayerController : CharacterBody3D
         _controlsLabel.OffsetRight = -20;
         _controlsLabel.OffsetBottom = 80;
 
-        _inventoryLabel = new Label
-        {
-            AnchorsPreset = (int)Control.LayoutPreset.TopLeft,
-            OffsetLeft = 20,
-            OffsetTop = 20,
-            OffsetRight = 220,
-            OffsetBottom = 100
-        };
+        _inventoryLabel = new Label();
         _inventoryLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.95f, 0.85f));
         _inventoryLabel.AddThemeFontSizeOverride("font_size", 14);
         _hudCanvas.AddChild(_inventoryLabel);
+        _inventoryLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopLeft);
+        _inventoryLabel.OffsetLeft = 20;
+        _inventoryLabel.OffsetTop = 20;
+        _inventoryLabel.OffsetRight = 220;
+        _inventoryLabel.OffsetBottom = 100;
 
         UpdateInventoryDisplay();
     }
@@ -131,6 +131,11 @@ public partial class PlayerController : CharacterBody3D
 
     public override void _Input(InputEvent @event)
     {
+        if (_inputLocked)
+        {
+            return;
+        }
+
         if (@event is InputEventMouseMotion mouseMotion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
             if (_cameraMode == CameraMode.FirstPerson)
@@ -176,12 +181,12 @@ public partial class PlayerController : CharacterBody3D
             velocity += GetGravity() * GravityScale * (float)delta;
         }
 
-        if (Input.IsActionJustPressed("jump") && IsOnFloor())
+        if (Input.IsActionJustPressed("jump") && IsOnFloor() && !_inputLocked)
         {
             velocity.Y = JumpVelocity;
         }
 
-        Vector2 inputDir = Input.GetVector("move_left", "move_right", "move_forward", "move_back");
+        Vector2 inputDir = _inputLocked ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_forward", "move_back");
         Basis moveBasis = _cameraMode == CameraMode.ThirdPerson ? _thirdPersonPivot.GlobalTransform.Basis : Transform.Basis;
         Vector3 direction = moveBasis * new Vector3(inputDir.X, 0, inputDir.Y).Normalized();
 
@@ -225,6 +230,13 @@ public partial class PlayerController : CharacterBody3D
 
     private void UpdateInteraction()
     {
+        if (_inputLocked)
+        {
+            _currentInteractable = null;
+            _interactionLabel.Hide();
+            return;
+        }
+
         var camera = GetActiveCamera();
         if (camera == null)
         {
@@ -290,6 +302,24 @@ public partial class PlayerController : CharacterBody3D
     {
         _firstPersonCamera.Current = _cameraMode == CameraMode.FirstPerson;
         _thirdPersonCamera.Current = _cameraMode == CameraMode.ThirdPerson;
+    }
+
+    public void SetInputLocked(bool locked)
+    {
+        _inputLocked = locked;
+        _currentInteractable = null;
+        _interactionLabel.Hide();
+
+        if (locked)
+        {
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            _crosshair.Visible = false;
+            Velocity = new Vector3(0, Velocity.Y, 0);
+        }
+        else
+        {
+            SetMouseCaptured(true);
+        }
     }
 
     private void SetMouseCaptured(bool captured)

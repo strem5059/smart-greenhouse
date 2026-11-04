@@ -114,8 +114,17 @@ Compilación correcta.
 - Cosecha: 1 lechuga y 2 semillas (`lettuce_seeds`).
 - Pendiente de validación manual: posición de las macetas sobre el canal y mensaje `[E]` por maceta.
 
+### Día 3 — Economía, oficina y panel administrativo
+- `EconomyManager` (autoload): saldo, venta de lechugas, compra de semillas y fertilizante, historial. Valores provisionales pendientes de aprobación: saldo inicial 100, lechuga 12, semilla 4, fertilizante 6 (`[Export]`). Saldo solo en sesión (sin guardado).
+- `ManagementPanel`: estados Closed/Opening/Open/Closing, tween de 0.6 s; pestañas Resumen, Tienda, Almacén (incl. venta), Finanzas, Gestión y Expansión (bloqueada hasta Fase 4). Compras y ventas piden confirmación.
+- `ComputerInteraction` (escritorio de la oficina): `[E] Abrir administración`; enciende la pantalla y abre el panel. ESC o el botón cierran el panel.
+- `PlayerController.SetInputLocked`: bloquea movimiento, cámara e interacción mientras el panel está abierto.
+- Oficina `scenes/office/office.tscn` en el extremo este (x 6.2–9.2), con puerta, ventanas, escritorio, silla, computadora y estantería; instanciada en `greenhouse.tscn`.
+- Pruebas headless: `test_economy.gd` passed; `test_scene.tscn` y `test_agriculture.gd` passed.
+- Pendiente de validación manual: visibilidad de la oficina, mensaje sobre la computadora, animación de apertura/cierre, paneles y bloqueo del jugador.
+
 ### Estado
-Día 2 terminado (correcciones de Fase 2 pendientes de validación manual).
+Día 2 terminado. Día 3 implementado; pendiente de validación manual en el editor.
 
 ### Siguiente paso (Día 3)
 Economía y panel: saldo, compra/venta, almacén e interfaz administrativa.

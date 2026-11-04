@@ -16,10 +16,13 @@ public partial class GrowingStation : StaticBody3D, IInteractable
     private InventoryManager? _inventory;
     private GrowthSimulator? _growthSimulator;
 
+    public bool IsOccupied => _plant != null;
+
     public override void _Ready()
     {
         _inventory = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
         _growthSimulator = GetNodeOrNull<GrowthSimulator>("/root/GrowthSimulator");
+        AddToGroup("growing_station");
 
         if (PotWithSoilScene != null)
         {

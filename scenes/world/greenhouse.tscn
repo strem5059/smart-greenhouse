@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" uid="uid://vetg8abh2bp5" path="res://scenes/crops/lettuce.tscn" id="lettuce_eaf45"]
 [ext_resource type="PackedScene" uid="uid://dyxpod1iw716f" path="res://scenes/crops/pot_with_soil.tscn" id="pot_fb85a467c"]
 
+[ext_resource type="PackedScene" path="res://scenes/office/office.tscn" id="office_inst"]
+
 [sub_resource type="Environment" id="Env_c2e530690"]
 background_mode = 2
 ambient_light_source = 2
@@ -1055,6 +1057,8 @@ PotWithSoilScene = ExtResource("pot_fb85a467c")
 
 [node name="Collision" type="CollisionShape3D" parent="./GrowingStation23"]
 shape = SubResource("BoxShape_station23")
+
+[node name="Office" parent="." instance=ExtResource("office_inst")]
 
 [node name="Player" parent="." unique_id=1767821126 instance=ExtResource("ext_ae477b2c7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
