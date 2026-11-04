@@ -119,7 +119,7 @@ Compilación correcta.
 - `ManagementPanel`: estados Closed/Opening/Open/Closing, tween de 0.6 s; pestañas Resumen, Tienda, Almacén (incl. venta), Finanzas, Gestión y Expansión (bloqueada hasta Fase 4). Compras y ventas piden confirmación.
 - `ComputerInteraction` (escritorio de la oficina): `[E] Abrir administración`; enciende la pantalla y abre el panel. ESC o el botón cierran el panel.
 - `PlayerController.SetInputLocked`: bloquea movimiento, cámara e interacción mientras el panel está abierto.
-- Oficina `scenes/office/office.tscn` en el extremo este (x 6.2–9.2), con puerta, ventanas, escritorio, silla, computadora y estantería; instanciada en `greenhouse.tscn`.
+- Oficina `scenes/office/office.tscn` fuera del invernadero, al este, escalada ×1.5 (4.5 × 12 × 4.5 m) para igualar el largo del invernadero; puerta a z=-2.0 (global z=-3.0) para evitar la columna central. Hueco de 1.5 m en el cristal este (`GlassWallRightN/S`) alineado con la puerta. El suelo de la oficina queda a 1.5 cm del del invernadero.
 - Pruebas headless: `test_economy.gd` passed; `test_scene.tscn` y `test_agriculture.gd` passed.
 - Pendiente de validación manual: visibilidad de la oficina, mensaje sobre la computadora, animación de apertura/cierre, paneles y bloqueo del jugador.
 

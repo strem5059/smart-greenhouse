@@ -439,7 +439,39 @@ size = Vector3(0.5, 0.08, 0.5)
 [sub_resource type="BoxShape3D" id="BoxShape_station23"]
 size = Vector3(0.5, 0.08, 0.5)
 
+[sub_resource type="BoxMesh" id="GlassGapMeshN"]
+size = Vector3(0.1, 5, 2.25)
+
+[sub_resource type="BoxShape3D" id="GlassGapShapeN"]
+size = Vector3(0.1, 5, 2.25)
+
+[sub_resource type="BoxMesh" id="GlassGapMeshS"]
+size = Vector3(0.1, 5, 8.25)
+
+[sub_resource type="BoxShape3D" id="GlassGapShapeS"]
+size = Vector3(0.1, 5, 8.25)
+
 [node name="Greenhouse" type="Node3D" unique_id=1194089454]
+
+[node name="GlassWallRightN" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.9, 2.5, -4.875)
+
+[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightN"]
+mesh = SubResource("GlassGapMeshN")
+surface_material_override/0 = SubResource("StdMat_f7989f")
+
+[node name="Collision" type="CollisionShape3D" parent="GlassWallRightN"]
+shape = SubResource("GlassGapShapeN")
+
+[node name="GlassWallRightS" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.9, 2.5, 1.875)
+
+[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightS"]
+mesh = SubResource("GlassGapMeshS")
+surface_material_override/0 = SubResource("StdMat_f7989f")
+
+[node name="Collision" type="CollisionShape3D" parent="GlassWallRightS"]
+shape = SubResource("GlassGapShapeS")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=811488973]
 environment = SubResource("Env_c2e530690")
@@ -587,16 +619,6 @@ surface_material_override/0 = SubResource("StdMat_635f33")
 
 [node name="Collision" type="CollisionShape3D" parent="GlassWallLeft" unique_id=793379452]
 shape = SubResource("BoxShape_ee27")
-
-[node name="GlassWallRight" type="StaticBody3D" parent="." unique_id=15967442]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.9, 2.5, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="GlassWallRight" unique_id=1182437677]
-mesh = SubResource("BoxMesh_3c63f")
-surface_material_override/0 = SubResource("StdMat_f7989f")
-
-[node name="Collision" type="CollisionShape3D" parent="GlassWallRight" unique_id=594895855]
-shape = SubResource("BoxShape_d0ab")
 
 [node name="GlassWallFront" type="StaticBody3D" parent="." unique_id=873737248]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -5.9)
@@ -1059,6 +1081,7 @@ PotWithSoilScene = ExtResource("pot_fb85a467c")
 shape = SubResource("BoxShape_station23")
 
 [node name="Office" parent="." instance=ExtResource("office_inst")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0.8, 0, 0)
 
 [node name="Player" parent="." unique_id=1767821126 instance=ExtResource("ext_ae477b2c7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

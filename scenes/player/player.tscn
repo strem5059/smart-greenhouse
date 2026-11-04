@@ -27,6 +27,7 @@ surface_material_override/0 = SubResource("mat_593d4b6ff")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
 
 [node name="FirstPersonCamera" type="Camera3D" parent="Head" unique_id=95450307]
+transform = Transform3D(1, 0, 0, 0, 0.99845266, -0.05560842, 0, 0.05560842, 0.99845266, 0, -0.6869503, -0.3833423)
 current = true
 
 [node name="ThirdPersonPivot" type="Node3D" parent="." unique_id=241801659]
@@ -37,3 +38,4 @@ current = true
 spring_length = 4.0
 
 [node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot/ThirdPersonPitch/SpringArm3D" unique_id=1809878924]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26421553, -0.375933)

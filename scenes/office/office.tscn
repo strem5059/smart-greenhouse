@@ -3,56 +3,56 @@
 [ext_resource type="Script" path="res://scripts/office/ComputerInteraction.cs" id="comp_script"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
-size = Vector3(3.0, 0.02, 8.0)
+size = Vector3(3.2, 0.02, 8.0)
 [sub_resource type="StandardMaterial3D" id="Mat_2"]
 albedo_color = Color(0.8, 0.8, 0.78, 1.0)
 
 [sub_resource type="BoxShape3D" id="BoxShape_3"]
-size = Vector3(3.0, 0.02, 8.0)
+size = Vector3(3.2, 0.02, 8.0)
 [sub_resource type="BoxMesh" id="BoxMesh_4"]
-size = Vector3(0.15, 0.9, 3.5)
+size = Vector3(0.15, 0.9, 1.5)
 [sub_resource type="StandardMaterial3D" id="Mat_5"]
 albedo_color = Color(0.95, 0.95, 0.95, 1.0)
 
 [sub_resource type="BoxShape3D" id="BoxShape_6"]
-size = Vector3(0.15, 0.9, 3.5)
+size = Vector3(0.15, 0.9, 1.5)
 [sub_resource type="BoxMesh" id="BoxMesh_7"]
-size = Vector3(0.15, 0.9, 3.5)
+size = Vector3(0.15, 0.9, 5.5)
 [sub_resource type="StandardMaterial3D" id="Mat_8"]
 albedo_color = Color(0.95, 0.95, 0.95, 1.0)
 
 [sub_resource type="BoxShape3D" id="BoxShape_9"]
-size = Vector3(0.15, 0.9, 3.5)
+size = Vector3(0.15, 0.9, 5.5)
 [sub_resource type="BoxMesh" id="BoxMesh_10"]
-size = Vector3(0.05, 1.8, 3.5)
+size = Vector3(0.05, 1.8, 1.5)
 [sub_resource type="StandardMaterial3D" id="Mat_11"]
 albedo_color = Color(0.7, 0.9, 0.95, 0.35)
 transparency = 1
 
 [sub_resource type="BoxShape3D" id="BoxShape_12"]
-size = Vector3(0.05, 1.8, 3.5)
+size = Vector3(0.05, 1.8, 1.5)
 [sub_resource type="BoxMesh" id="BoxMesh_13"]
-size = Vector3(0.05, 1.8, 3.5)
+size = Vector3(0.05, 1.8, 5.5)
 [sub_resource type="StandardMaterial3D" id="Mat_14"]
 albedo_color = Color(0.7, 0.9, 0.95, 0.35)
 transparency = 1
 
 [sub_resource type="BoxShape3D" id="BoxShape_15"]
-size = Vector3(0.05, 1.8, 3.5)
+size = Vector3(0.05, 1.8, 5.5)
 [sub_resource type="BoxMesh" id="BoxMesh_16"]
-size = Vector3(0.15, 0.3, 3.5)
+size = Vector3(0.15, 0.3, 1.5)
 [sub_resource type="StandardMaterial3D" id="Mat_17"]
 albedo_color = Color(0.95, 0.95, 0.95, 1.0)
 
 [sub_resource type="BoxShape3D" id="BoxShape_18"]
-size = Vector3(0.15, 0.3, 3.5)
+size = Vector3(0.15, 0.3, 1.5)
 [sub_resource type="BoxMesh" id="BoxMesh_19"]
-size = Vector3(0.15, 0.3, 3.5)
+size = Vector3(0.15, 0.3, 5.5)
 [sub_resource type="StandardMaterial3D" id="Mat_20"]
 albedo_color = Color(0.95, 0.95, 0.95, 1.0)
 
 [sub_resource type="BoxShape3D" id="BoxShape_21"]
-size = Vector3(0.15, 0.3, 3.5)
+size = Vector3(0.15, 0.3, 5.5)
 [sub_resource type="BoxMesh" id="BoxMesh_22"]
 size = Vector3(0.15, 0.8, 1.0)
 [sub_resource type="StandardMaterial3D" id="Mat_23"]
@@ -172,7 +172,7 @@ size = Vector3(0.6, 1.8, 0.5)
 [node name="Office" type="Node3D"]
 
 [node name="OfficeFloor" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.7, 0.01, 0.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6, 0.0, 0.0)
 
 [node name="Mesh" type="MeshInstance3D" parent="./OfficeFloor"]
 mesh = SubResource("BoxMesh_1")
@@ -182,7 +182,7 @@ surface_material_override/0 = SubResource("Mat_2")
 shape = SubResource("BoxShape_3")
 
 [node name="WestWallBaseN" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 0.45, -2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 0.45, -3.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestWallBaseN"]
 mesh = SubResource("BoxMesh_4")
@@ -192,7 +192,7 @@ surface_material_override/0 = SubResource("Mat_5")
 shape = SubResource("BoxShape_6")
 
 [node name="WestWallBaseS" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 0.45, 2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 0.45, 1.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestWallBaseS"]
 mesh = SubResource("BoxMesh_7")
@@ -202,7 +202,7 @@ surface_material_override/0 = SubResource("Mat_8")
 shape = SubResource("BoxShape_9")
 
 [node name="WestGlassN" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 1.8, -2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 1.8, -3.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestGlassN"]
 mesh = SubResource("BoxMesh_10")
@@ -212,7 +212,7 @@ surface_material_override/0 = SubResource("Mat_11")
 shape = SubResource("BoxShape_12")
 
 [node name="WestGlassS" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 1.8, 2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 1.8, 1.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestGlassS"]
 mesh = SubResource("BoxMesh_13")
@@ -222,7 +222,7 @@ surface_material_override/0 = SubResource("Mat_14")
 shape = SubResource("BoxShape_15")
 
 [node name="WestWallTopN" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.85, -2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.85, -3.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestWallTopN"]
 mesh = SubResource("BoxMesh_16")
@@ -232,7 +232,7 @@ surface_material_override/0 = SubResource("Mat_17")
 shape = SubResource("BoxShape_18")
 
 [node name="WestWallTopS" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.85, 2.25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.85, 1.25)
 
 [node name="Mesh" type="MeshInstance3D" parent="./WestWallTopS"]
 mesh = SubResource("BoxMesh_19")
@@ -242,7 +242,7 @@ surface_material_override/0 = SubResource("Mat_20")
 shape = SubResource("BoxShape_21")
 
 [node name="DoorLintel" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.6, 0.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2, 2.6, -2.0)
 
 [node name="Mesh" type="MeshInstance3D" parent="./DoorLintel"]
 mesh = SubResource("BoxMesh_22")
@@ -292,7 +292,7 @@ surface_material_override/0 = SubResource("Mat_35")
 shape = SubResource("BoxShape_36")
 
 [node name="DoorLeaf" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.7, 1.1, -0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.7, 1.1, -2.5)
 mesh = SubResource("BoxMesh_37")
 surface_material_override/0 = SubResource("Mat_38")
 
@@ -360,7 +360,7 @@ mesh = SubResource("BoxMesh_57")
 surface_material_override/0 = SubResource("Mat_58")
 
 [node name="Shelf" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.05, 1.2, -2.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.05, 1.2, 2.5)
 
 [node name="Mesh" type="MeshInstance3D" parent="./Shelf"]
 mesh = SubResource("BoxMesh_59")
@@ -370,17 +370,17 @@ surface_material_override/0 = SubResource("Mat_60")
 shape = SubResource("BoxShape_61")
 
 [node name="SeedTray" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0, 1.27, -2.7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0, 1.27, 2.5)
 mesh = SubResource("BoxMesh_62")
 surface_material_override/0 = SubResource("Mat_63")
 
 [node name="SeedlingsTray" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0, 1.35, -2.7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.0, 1.35, 2.5)
 mesh = SubResource("BoxMesh_64")
 surface_material_override/0 = SubResource("Mat_65")
 
 [node name="Cabinet" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.9, 0.9, 2.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.9, 0.9, -3.0)
 
 [node name="Mesh" type="MeshInstance3D" parent="./Cabinet"]
 mesh = SubResource("BoxMesh_66")
