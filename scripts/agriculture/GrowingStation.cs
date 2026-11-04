@@ -93,7 +93,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
         var instance = PlantScene.Instantiate<PlantController>();
         instance.Data = new CropData();
         AddChild(instance);
-        instance.Position = new Vector3(0, 0.6f, 0);
+        instance.Position = new Vector3(0, 1.22f, 0);
         _plant = instance;
 
         _growthSimulator?.RegisterPlant(_plant);

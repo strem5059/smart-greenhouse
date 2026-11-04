@@ -45,11 +45,14 @@ tests/
 - `scripts/inventory/InventoryManager.cs` — inventario básico.
 - `scripts/interfaces/IInteractable.cs` — interfaz de interacción.
 
-### Funcionalidades terminadas (Día 2)
+### Funcionalidades terminadas (Día 2 + actualización visual)
 - Tuberías reorganizadas: líneas principales en el techo, bajantes y ramales sobre cada mesa.
-- Interacción con `E`: detección por raycast e indicación en pantalla.
+- Interacción con `E`: detección por raycast e indicador contextual en pantalla.
+- HUD minimalista: indicador contextual, controles adicionales (`V`, `Esc`) e inventario resumido actualizado.
 - Plantar lechuga en estaciones de cultivo (consume 1 semilla).
 - 4 etapas de crecimiento: Semilla, Plántula, Crecimiento, Madura.
+- Maceta con tierra visible: las estaciones comienzan vacías y muestran vegetación progresivamente.
+- Representaciones visuales diferenciadas para cada etapa (brotes, hojas, lechuga completa).
 - Crecimiento dependiente del tiempo simulado (1 tick/s).
 - Agua y nutrientes afectan el crecimiento; déficit reduce salud.
 - Regar y fertilizar la planta.

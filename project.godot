@@ -15,15 +15,15 @@ run/main_scene="res://scenes/world/greenhouse.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
-[display]
-
-window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
-
 [autoload]
 
 InventoryManager="*res://scripts/inventory/InventoryManager.cs"
 GrowthSimulator="*res://scripts/agriculture/GrowthSimulator.cs"
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [dotnet]
 

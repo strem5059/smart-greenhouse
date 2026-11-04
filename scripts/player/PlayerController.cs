@@ -1,5 +1,6 @@
 using Godot;
 using SmartGreenhouse.Interfaces;
+using SmartGreenhouse.Inventory;
 
 namespace SmartGreenhouse.Player;
 
@@ -21,28 +22,98 @@ public partial class PlayerController : CharacterBody3D
     private Label _interactionLabel = null!;
     private IInteractable? _currentInteractable;
 
+    private CanvasLayer _hudCanvas = null!;
+    private Label _inventoryLabel = null!;
+    private Label _controlsLabel = null!;
+    private InventoryManager? _inventoryManager;
+
     public override void _Ready()
     {
         _head = GetNode<Node3D>("Head");
         _firstPersonCamera = GetNode<Camera3D>("Head/FirstPersonCamera");
         _thirdPersonCamera = GetNode<Camera3D>("ThirdPersonPivot/ThirdPersonCamera");
         RegisterInputActions();
-        SetupInteractionUI();
+        _inventoryManager = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
+        SetupHUD();
         Input.MouseMode = Input.MouseModeEnum.Captured;
         UpdateCameraMode();
     }
 
-    private void SetupInteractionUI()
+    private void SetupHUD()
     {
-        var canvas = new CanvasLayer();
-        AddChild(canvas);
+        _hudCanvas = new CanvasLayer();
+        AddChild(_hudCanvas);
+
+        var panelStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.05f, 0.07f, 0.06f, 0.75f),
+            BorderColor = new Color(0.2f, 0.6f, 0.35f, 0.8f),
+            BorderWidthLeft = 2,
+            BorderWidthTop = 2,
+            BorderWidthRight = 2,
+            BorderWidthBottom = 2,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6
+        };
+
+        // Contextual interaction indicator (bottom center)
+        var interactionPanel = new Panel
+        {
+            AnchorsPreset = (int)Control.LayoutPreset.CenterBottom,
+            OffsetLeft = -160,
+            OffsetTop = -80,
+            OffsetRight = 160,
+            OffsetBottom = -40
+        };
+        interactionPanel.AddThemeStyleboxOverride("panel", panelStyle);
+        _hudCanvas.AddChild(interactionPanel);
+
         _interactionLabel = new Label
         {
-            Position = new Vector2(100, 100),
-            Modulate = new Color(1, 1, 1)
+            AnchorsPreset = (int)Control.LayoutPreset.FullRect,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            ThemeTypeVariation = "HeaderLarge"
         };
-        canvas.AddChild(_interactionLabel);
+        _interactionLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.95f, 0.9f));
+        _interactionLabel.AddThemeFontSizeOverride("font_size", 18);
+        interactionPanel.AddChild(_interactionLabel);
         _interactionLabel.Hide();
+
+        // Info panel (bottom right): controls + inventory
+        var infoPanel = new Panel
+        {
+            AnchorsPreset = (int)Control.LayoutPreset.BottomRight,
+            OffsetLeft = -240,
+            OffsetTop = -130,
+            OffsetRight = -20,
+            OffsetBottom = -20
+        };
+        infoPanel.AddThemeStyleboxOverride("panel", panelStyle);
+        _hudCanvas.AddChild(infoPanel);
+
+        _controlsLabel = new Label
+        {
+            Position = new Vector2(15, 12),
+            Size = new Vector2(210, 50),
+            Text = "V — Cambiar cámara\nEsc — Liberar ratón"
+        };
+        _controlsLabel.AddThemeColorOverride("font_color", new Color(0.75f, 0.8f, 0.75f));
+        _controlsLabel.AddThemeFontSizeOverride("font_size", 14);
+        infoPanel.AddChild(_controlsLabel);
+
+        _inventoryLabel = new Label
+        {
+            Position = new Vector2(15, 68),
+            Size = new Vector2(210, 60)
+        };
+        _inventoryLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.95f, 0.85f));
+        _inventoryLabel.AddThemeFontSizeOverride("font_size", 14);
+        infoPanel.AddChild(_inventoryLabel);
+
+        UpdateInventoryDisplay();
     }
 
     private void RegisterInputActions()
@@ -126,6 +197,20 @@ public partial class PlayerController : CharacterBody3D
         Velocity = velocity;
         MoveAndSlide();
         UpdateInteraction();
+        UpdateInventoryDisplay();
+    }
+
+    private void UpdateInventoryDisplay()
+    {
+        if (_inventoryManager == null || _inventoryLabel == null)
+        {
+            return;
+        }
+
+        int seeds = _inventoryManager.GetQuantity("lettuce_seeds");
+        int fertilizer = _inventoryManager.GetQuantity("fertilizer");
+        int harvest = _inventoryManager.GetQuantity("lettuce_harvested");
+        _inventoryLabel.Text = $"SEMILLAS       {seeds}\nFERTILIZANTE   {fertilizer}\nCOSECHA        {harvest}";
     }
 
     private void UpdateInteraction()
