@@ -64,30 +64,32 @@ public partial class PlayerController : CharacterBody3D
 
         _interactionLabel = new Label
         {
-            AnchorsPreset = (int)Control.LayoutPreset.CenterBottom,
-            OffsetTop = -60,
-            OffsetBottom = -30,
             HorizontalAlignment = HorizontalAlignment.Center,
             Text = "[E] Interactuar"
         };
         _interactionLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.95f, 0.9f));
         _interactionLabel.AddThemeFontSizeOverride("font_size", 20);
         _hudCanvas.AddChild(_interactionLabel);
+        _interactionLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom);
+        _interactionLabel.OffsetLeft = -200;
+        _interactionLabel.OffsetRight = 200;
+        _interactionLabel.OffsetTop = -60;
+        _interactionLabel.OffsetBottom = -30;
         _interactionLabel.Hide();
 
         _controlsLabel = new Label
         {
-            AnchorsPreset = (int)Control.LayoutPreset.TopRight,
-            OffsetLeft = -220,
-            OffsetTop = 20,
-            OffsetRight = -20,
-            OffsetBottom = 80,
             HorizontalAlignment = HorizontalAlignment.Right,
             Text = "V — Cambiar cámara\nEsc — Liberar ratón"
         };
         _controlsLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.9f, 0.85f));
         _controlsLabel.AddThemeFontSizeOverride("font_size", 14);
         _hudCanvas.AddChild(_controlsLabel);
+        _controlsLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
+        _controlsLabel.OffsetLeft = -220;
+        _controlsLabel.OffsetTop = 20;
+        _controlsLabel.OffsetRight = -20;
+        _controlsLabel.OffsetBottom = 80;
 
         _inventoryLabel = new Label
         {
