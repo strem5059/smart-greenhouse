@@ -11,22 +11,22 @@ config_version=5
 [application]
 
 config/name="Smart Greenhouse"
-config/features=PackedStringArray("4.7", "C#", "Forward Plus")
-config/icon="res://icon.svg"
 run/main_scene="res://scenes/world/greenhouse.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://icon.svg"
 
 [display]
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[dotnet]
+
+project/assembly_name="SmartGreenhouse"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
-
-[dotnet]
-
-project/assembly_name="Smart Greenhouse"
 
 [rendering]
 

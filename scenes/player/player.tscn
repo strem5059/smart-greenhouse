@@ -1,6 +1,6 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=6 format=3 uid="uid://b0bajp0q8pqmg"]
 
-[ext_resource type="Script" path="res://scripts/player/PlayerController.cs" id="scr_35f3feb4f"]
+[ext_resource type="Script" uid="uid://c4o8wojif7quc" path="res://scripts/player/PlayerController.cs" id="scr_35f3feb4f"]
 
 [sub_resource type="CapsuleShape3D" id="shape_018e0e1"]
 height = 1.8

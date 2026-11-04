@@ -50,7 +50,7 @@ tests/
 ### Comandos de compilación y prueba
 ```powershell
 cd "C:\Users\jafet\OneDrive\Desktop\Juego zacek\smart-greenhouse"
-dotnet build "Smart Greenhouse.csproj"
+dotnet build SmartGreenhouse.sln
 & 'C:\Users\jafet\Downloads\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64.exe' --path . --headless --verbose tests/test_scene.tscn
 ```
 
