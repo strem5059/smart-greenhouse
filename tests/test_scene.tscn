@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/world/greenhouse.tscn" id="1_abc123def4567"]
+
+[sub_resource type="GDScript" id="GDScript_abc123def4567"]
+script/source = "extends Timer
+func _ready():
+    wait_time = 2.0
+    one_shot = true
+    timeout.connect(func(): print(\"Run test passed\"); get_tree().quit(0))
+    start()
+"
+
+[node name="TestScene" type="Node3D"]
+
+[node name="Greenhouse" parent="." instance=ExtResource("1_abc123def4567")]
+
+[node name="AutoQuit" type="Timer" parent="."]
+script = SubResource("GDScript_abc123def4567")
