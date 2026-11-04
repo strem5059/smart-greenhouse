@@ -38,4 +38,4 @@ current = true
 spring_length = 4.0
 
 [node name="ThirdPersonCamera" type="Camera3D" parent="ThirdPersonPivot/ThirdPersonPitch/SpringArm3D" unique_id=1809878924]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26421553, -0.375933)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26421553, -0.5095904)
