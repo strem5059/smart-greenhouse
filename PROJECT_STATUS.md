@@ -3,10 +3,12 @@
 ## Día 1 — Base del proyecto y mundo explorable
 
 ### Entorno
-- Godot: 4.7.2.stable.mono.official
+- Godot: 4.7.2.stable.mono.official (obligatorio usar la versión **mono**)
 - .NET SDK: 8.0.427
 - Git: 2.56.0.windows.4
 - Plataforma: Windows PC
+
+> **Nota:** Abrir el proyecto con Godot `stable` (no mono) produce el error `No loader found for resource: res://scripts/player/PlayerController.cs`. Usar siempre el ejecutable mono.
 
 ### Estructura creada
 ```
