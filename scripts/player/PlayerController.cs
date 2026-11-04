@@ -1,4 +1,5 @@
 using Godot;
+using SmartGreenhouse.Interfaces;
 
 namespace SmartGreenhouse.Player;
 
@@ -16,14 +17,32 @@ public partial class PlayerController : CharacterBody3D
     private enum CameraMode { FirstPerson, ThirdPerson }
     private CameraMode _cameraMode = CameraMode.FirstPerson;
 
+    [Export] public float InteractionRange = 2.5f;
+    private Label _interactionLabel = null!;
+    private IInteractable? _currentInteractable;
+
     public override void _Ready()
     {
         _head = GetNode<Node3D>("Head");
         _firstPersonCamera = GetNode<Camera3D>("Head/FirstPersonCamera");
         _thirdPersonCamera = GetNode<Camera3D>("ThirdPersonPivot/ThirdPersonCamera");
         RegisterInputActions();
+        SetupInteractionUI();
         Input.MouseMode = Input.MouseModeEnum.Captured;
         UpdateCameraMode();
+    }
+
+    private void SetupInteractionUI()
+    {
+        var canvas = new CanvasLayer();
+        AddChild(canvas);
+        _interactionLabel = new Label
+        {
+            Position = new Vector2(100, 100),
+            Modulate = new Color(1, 1, 1)
+        };
+        canvas.AddChild(_interactionLabel);
+        _interactionLabel.Hide();
     }
 
     private void RegisterInputActions()
@@ -34,6 +53,7 @@ public partial class PlayerController : CharacterBody3D
         RegisterKeyAction("move_right", Key.D);
         RegisterKeyAction("jump", Key.Space);
         RegisterKeyAction("change_camera", Key.V);
+        RegisterKeyAction("interact", Key.E);
     }
 
     private static void RegisterKeyAction(string action, Key key)
@@ -68,6 +88,11 @@ public partial class PlayerController : CharacterBody3D
         {
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
+
+        if (@event.IsActionPressed("interact") && _currentInteractable != null)
+        {
+            _currentInteractable.Interact();
+        }
     }
 
     public override void _PhysicsProcess(double delta)
@@ -100,6 +125,51 @@ public partial class PlayerController : CharacterBody3D
 
         Velocity = velocity;
         MoveAndSlide();
+        UpdateInteraction();
+    }
+
+    private void UpdateInteraction()
+    {
+        var camera = GetActiveCamera();
+        if (camera == null)
+        {
+            return;
+        }
+
+        var spaceState = GetWorld3D().DirectSpaceState;
+        var from = camera.GlobalPosition;
+        var to = from + (-camera.GlobalTransform.Basis.Z) * InteractionRange;
+        var query = PhysicsRayQueryParameters3D.Create(from, to);
+        query.CollideWithAreas = true;
+        query.CollideWithBodies = true;
+
+        var result = spaceState.IntersectRay(query);
+        if (result.Count > 0 && result["collider"].AsGodotObject() is IInteractable interactable)
+        {
+            _currentInteractable = interactable;
+            _interactionLabel.Text = interactable.GetInteractionPrompt();
+            _interactionLabel.Show();
+        }
+        else
+        {
+            _currentInteractable = null;
+            _interactionLabel.Hide();
+        }
+    }
+
+    private Camera3D? GetActiveCamera()
+    {
+        if (_firstPersonCamera.Current)
+        {
+            return _firstPersonCamera;
+        }
+
+        if (_thirdPersonCamera.Current)
+        {
+            return _thirdPersonCamera;
+        }
+
+        return null;
     }
 
     private void ToggleCamera()

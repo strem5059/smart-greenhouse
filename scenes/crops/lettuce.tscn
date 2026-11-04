@@ -1,0 +1,59 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" uid="uid://bfxjvuwoaqwhc" path="res://scripts/agriculture/PlantController.cs" id="plant_script"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_Seed"]
+albedo_color = Color(0.4, 0.25, 0.1, 1)
+
+[sub_resource type="SphereMesh" id="Mesh_Seed"]
+radius = 0.04
+height = 0.08
+material = SubResource("Mat_Seed")
+
+[sub_resource type="StandardMaterial3D" id="Mat_Leaves"]
+albedo_color = Color(0.2, 0.75, 0.25, 1)
+
+[sub_resource type="SphereMesh" id="Mesh_Seedling"]
+radius = 0.08
+height = 0.16
+material = SubResource("Mat_Leaves")
+
+[sub_resource type="SphereMesh" id="Mesh_Growing"]
+radius = 0.15
+height = 0.3
+material = SubResource("Mat_Leaves")
+
+[sub_resource type="SphereMesh" id="Mesh_Mature"]
+radius = 0.25
+height = 0.5
+material = SubResource("Mat_Leaves")
+
+[sub_resource type="SphereMesh" id="Mesh_Mature_Inner"]
+radius = 0.18
+height = 0.36
+material = SubResource("Mat_Leaves")
+
+[node name="Lettuce" type="Node3D"]
+script = ExtResource("plant_script")
+
+[node name="SeedVisual" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("Mesh_Seed")
+
+[node name="SeedlingVisual" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("Mesh_Seedling")
+
+[node name="GrowingVisual" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("Mesh_Growing")
+
+[node name="MatureVisual" type="MeshInstance3D" parent="."]
+visible = false
+
+[node name="Outer" type="MeshInstance3D" parent="MatureVisual"]
+mesh = SubResource("Mesh_Mature")
+
+[node name="Inner" type="MeshInstance3D" parent="MatureVisual"]
+position = Vector3(0, 0.05, 0)
+mesh = SubResource("Mesh_Mature_Inner")
