@@ -1,29 +1,29 @@
-[gd_scene load_steps=6 format=3 uid="uid://bufxma1k4v48q"]
+[gd_scene load_steps=6 format=3 uid="uid://byej6stpvb5no"]
 
-[ext_resource type="Script" uid="uid://c4o8wojif7quc" path="res://scripts/player/PlayerController.cs" id="scr_2912dae55"]
+[ext_resource type="Script" uid="uid://c4o8wojif7quc" path="res://scripts/player/PlayerController.cs" id="scr_ad472027b"]
 
-[sub_resource type="CapsuleShape3D" id="shape_7e530c3"]
+[sub_resource type="CapsuleShape3D" id="shape_beb2526"]
 height = 1.8
 radius = 0.4
 
-[sub_resource type="CapsuleMesh" id="mesh_e8939acd"]
+[sub_resource type="CapsuleMesh" id="mesh_5f4b0d81"]
 height = 1.8
 radius = 0.4
 
-[sub_resource type="StandardMaterial3D" id="mat_46ebd1433"]
+[sub_resource type="StandardMaterial3D" id="mat_f4fb2427f"]
 albedo_color = Color(0.2, 0.5, 0.9, 1)
 
-[sub_resource type="Environment" id="env_66cf469aa"]
+[sub_resource type="Environment" id="env_4337a92b1"]
 
 [node name="Player" type="CharacterBody3D"]
-script = ExtResource("scr_2912dae55")
+script = ExtResource("scr_ad472027b")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("shape_7e530c3")
+shape = SubResource("shape_beb2526")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("mesh_e8939acd")
-surface_material_override/0 = SubResource("mat_46ebd1433")
+mesh = SubResource("mesh_5f4b0d81")
+surface_material_override/0 = SubResource("mat_f4fb2427f")
 
 [node name="Head" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)

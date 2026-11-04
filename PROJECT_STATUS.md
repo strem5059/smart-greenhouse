@@ -62,6 +62,7 @@ tests/
 
 ### Errores conocidos / pendientes
 - Warning `invalid UID` al cargar `greenhouse.tscn` por el UID autogenerado de `player.tscn`. No impide ejecutar el juego; se corregirá guardando las escenas desde Godot Editor.
+- Algunos errores internos de `text_edit.cpp` del editor de Godot 4.7 (no afectan ejecución).
 - Leaks de recursos al cerrar tests headless (no críticos).
 
 ### Comandos de compilación y prueba

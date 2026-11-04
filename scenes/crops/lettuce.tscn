@@ -1,10 +1,22 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene format=3 uid="uid://bt3pmxr3r6v08"]
 
 [ext_resource type="Script" uid="uid://bfxjvuwoaqwhc" path="res://scripts/agriculture/PlantController.cs" id="plant_script"]
+
+[sub_resource type="CylinderMesh" id="mesh_b0b34dc3"]
+top_radius = 0.22
+bottom_radius = 0.18
+height = 0.18
+radial_segments = 16
 
 [sub_resource type="StandardMaterial3D" id="mat_41ab14cd9"]
 albedo_color = Color(0.15, 0.15, 0.16, 1)
 roughness = 0.7
+
+[sub_resource type="CylinderMesh" id="mesh_d2050f16"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 0.04
+radial_segments = 16
 
 [sub_resource type="StandardMaterial3D" id="mat_34c42e949"]
 albedo_color = Color(0.25, 0.15, 0.08, 1)
@@ -13,121 +25,103 @@ roughness = 0.95
 [sub_resource type="StandardMaterial3D" id="mat_3dc30b779"]
 albedo_color = Color(0.2, 0.12, 0.06, 1)
 
+[sub_resource type="SphereMesh" id="mesh_e8f94a73"]
+material = SubResource("mat_3dc30b779")
+radius = 0.03
+height = 0.06
+
 [sub_resource type="StandardMaterial3D" id="mat_ddadd0a3c"]
 albedo_color = Color(0.22, 0.78, 0.28, 1)
 roughness = 0.5
+
+[sub_resource type="SphereMesh" id="mesh_aeec406b"]
+material = SubResource("mat_ddadd0a3c")
+radius = 0.04
+height = 0.08
+
+[sub_resource type="SphereMesh" id="mesh_9097ce26"]
+material = SubResource("mat_ddadd0a3c")
+radius = 0.09
+height = 0.18
+
+[sub_resource type="SphereMesh" id="mesh_db0771a5"]
+material = SubResource("mat_ddadd0a3c")
+radius = 0.14
+height = 0.28
 
 [sub_resource type="StandardMaterial3D" id="mat_43163ec6f"]
 albedo_color = Color(0.15, 0.6, 0.2, 1)
 roughness = 0.5
 
-[sub_resource type="CylinderMesh" id="mesh_b0b34dc3"]
-top_radius = 0.22
-bottom_radius = 0.18
-height = 0.18
-radial_segments = 16
-
-[sub_resource type="CylinderMesh" id="mesh_d2050f16"]
-top_radius = 0.2
-bottom_radius = 0.2
-height = 0.04
-radial_segments = 16
-
-[sub_resource type="SphereMesh" id="mesh_e8f94a73"]
-radius = 0.03
-height = 0.06
-material = SubResource("mat_3dc30b779")
-
-[sub_resource type="SphereMesh" id="mesh_aeec406b"]
-radius = 0.04
-height = 0.08
-material = SubResource("mat_ddadd0a3c")
-
-[sub_resource type="SphereMesh" id="mesh_9097ce26"]
-radius = 0.09
-height = 0.18
-material = SubResource("mat_ddadd0a3c")
-
-[sub_resource type="SphereMesh" id="mesh_db0771a5"]
-radius = 0.14
-height = 0.28
-material = SubResource("mat_ddadd0a3c")
-
 [sub_resource type="SphereMesh" id="mesh_ea6b038a"]
+material = SubResource("mat_43163ec6f")
 radius = 0.1
 height = 0.2
-material = SubResource("mat_43163ec6f")
 
-[node name="Lettuce" type="Node3D"]
+[node name="Lettuce" type="Node3D" unique_id=2125193755]
 script = ExtResource("plant_script")
 
-; Pot base
-[node name="Pot" type="MeshInstance3D" parent="."]
+[node name="Pot" type="MeshInstance3D" parent="." unique_id=561181785]
 mesh = SubResource("mesh_b0b34dc3")
 surface_material_override/0 = SubResource("mat_41ab14cd9")
 
-; Soil surface
-[node name="Soil" type="MeshInstance3D" parent="."]
+[node name="Soil" type="MeshInstance3D" parent="." unique_id=1856073142]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
 mesh = SubResource("mesh_d2050f16")
 surface_material_override/0 = SubResource("mat_34c42e949")
 
-; Stage 1: Seed (small mound in soil)
-[node name="SeedVisual" type="Node3D" parent="."]
+[node name="SeedVisual" type="Node3D" parent="." unique_id=649259216]
 visible = false
 
-[node name="Seed" type="MeshInstance3D" parent="SeedVisual"]
+[node name="Seed" type="MeshInstance3D" parent="SeedVisual" unique_id=683800047]
 transform = Transform3D(1, 0, 0, 0, 0.6, 0, 0, 0, 1, 0, 0.1, 0)
 mesh = SubResource("mesh_e8f94a73")
 
-; Stage 2: Seedling (two tiny leaves)
-[node name="SeedlingVisual" type="Node3D" parent="."]
+[node name="SeedlingVisual" type="Node3D" parent="." unique_id=1808485802]
 visible = false
 
-[node name="Leaf1" type="MeshInstance3D" parent="SeedlingVisual"]
+[node name="Leaf1" type="MeshInstance3D" parent="SeedlingVisual" unique_id=1081960976]
 transform = Transform3D(0.8, -0.2, 0, 0.2, 0.8, 0, 0, 0, 1, 0.02, 0.12, 0)
 mesh = SubResource("mesh_aeec406b")
 
-[node name="Leaf2" type="MeshInstance3D" parent="SeedlingVisual"]
+[node name="Leaf2" type="MeshInstance3D" parent="SeedlingVisual" unique_id=817792031]
 transform = Transform3D(0.7, 0.25, 0, -0.25, 0.7, 0, 0, 0, 1, -0.02, 0.11, 0.01)
 mesh = SubResource("mesh_aeec406b")
 
-; Stage 3: Growing (multiple leaves)
-[node name="GrowingVisual" type="Node3D" parent="."]
+[node name="GrowingVisual" type="Node3D" parent="." unique_id=348864586]
 visible = false
 
-[node name="Leaf1" type="MeshInstance3D" parent="GrowingVisual"]
+[node name="Leaf1" type="MeshInstance3D" parent="GrowingVisual" unique_id=949566165]
 transform = Transform3D(1, 0, 0, 0, 0.9, 0, 0, 0, 1, 0.05, 0.15, 0)
 mesh = SubResource("mesh_9097ce26")
 
-[node name="Leaf2" type="MeshInstance3D" parent="GrowingVisual"]
+[node name="Leaf2" type="MeshInstance3D" parent="GrowingVisual" unique_id=1261406608]
 transform = Transform3D(0.85, -0.3, 0, 0.3, 0.85, 0, 0, 0, 1, -0.05, 0.14, 0.03)
 mesh = SubResource("mesh_9097ce26")
 
-[node name="Leaf3" type="MeshInstance3D" parent="GrowingVisual"]
+[node name="Leaf3" type="MeshInstance3D" parent="GrowingVisual" unique_id=86908855]
 transform = Transform3D(0.7, 0.2, 0, -0.2, 0.7, 0, 0, 0, 1, 0, 0.16, -0.04)
 mesh = SubResource("mesh_9097ce26")
 
-; Stage 4: Mature (full lettuce head)
-[node name="MatureVisual" type="Node3D" parent="."]
+[node name="MatureVisual" type="Node3D" parent="." unique_id=1339663682]
 visible = false
 
-[node name="Leaf1" type="MeshInstance3D" parent="MatureVisual"]
+[node name="Leaf1" type="MeshInstance3D" parent="MatureVisual" unique_id=242732269]
 transform = Transform3D(1.1, 0, 0, 0, 0.8, 0, 0, 0, 1.1, 0.08, 0.18, 0)
 mesh = SubResource("mesh_db0771a5")
 
-[node name="Leaf2" type="MeshInstance3D" parent="MatureVisual"]
+[node name="Leaf2" type="MeshInstance3D" parent="MatureVisual" unique_id=1075168304]
 transform = Transform3D(0.9, -0.35, 0, 0.35, 0.9, 0, 0, 0, 1.1, -0.08, 0.17, 0.05)
 mesh = SubResource("mesh_db0771a5")
 
-[node name="Leaf3" type="MeshInstance3D" parent="MatureVisual"]
+[node name="Leaf3" type="MeshInstance3D" parent="MatureVisual" unique_id=721578694]
 transform = Transform3D(0.8, 0.3, 0, -0.3, 0.8, 0, 0, 0, 1, 0, 0.2, -0.07)
 mesh = SubResource("mesh_db0771a5")
 
-[node name="Leaf4" type="MeshInstance3D" parent="MatureVisual"]
+[node name="Leaf4" type="MeshInstance3D" parent="MatureVisual" unique_id=1859674541]
 transform = Transform3D(1, 0.1, 0, -0.1, 1, 0, 0, 0, 0.9, 0.04, 0.22, 0.06)
 mesh = SubResource("mesh_ea6b038a")
 
-[node name="Leaf5" type="MeshInstance3D" parent="MatureVisual"]
+[node name="Leaf5" type="MeshInstance3D" parent="MatureVisual" unique_id=1192882020]
 transform = Transform3D(0.9, -0.15, 0, 0.15, 0.9, 0, 0, 0, 0.9, -0.05, 0.21, -0.03)
 mesh = SubResource("mesh_ea6b038a")

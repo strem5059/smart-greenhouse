@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://bln4ddcbtlc4t"]
 
-[ext_resource type="PackedScene" path="res://scenes/world/greenhouse.tscn" id="1_abc123def4567"]
+[ext_resource type="PackedScene" uid="uid://bxfimkgm2mm8r" path="res://scenes/world/greenhouse.tscn" id="1_abc123def4567"]
 
 [sub_resource type="GDScript" id="GDScript_abc123def4567"]
 script/source = "extends Timer
@@ -11,9 +11,9 @@ func _ready():
     start()
 "
 
-[node name="TestScene" type="Node3D"]
+[node name="TestScene" type="Node3D" unique_id=1846991761]
 
-[node name="Greenhouse" parent="." instance=ExtResource("1_abc123def4567")]
+[node name="Greenhouse" parent="." unique_id=1963597229 instance=ExtResource("1_abc123def4567")]
 
-[node name="AutoQuit" type="Timer" parent="."]
+[node name="AutoQuit" type="Timer" parent="." unique_id=26014752]
 script = SubResource("GDScript_abc123def4567")
