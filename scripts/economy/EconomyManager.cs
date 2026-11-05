@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using SmartGreenhouse.Interfaces;
 using SmartGreenhouse.Inventory;
 
 namespace SmartGreenhouse.Economy;
@@ -10,6 +11,7 @@ public partial class EconomyManager : Node
     [Export] public int LettucePrice = 12;
     [Export] public int SeedPrice = 4;
     [Export] public int FertilizerPrice = 6;
+    [Export] public int ExpansionPrice = 250;
 
     private readonly List<TransactionData> _history = new();
     private InventoryManager? _inventory;
@@ -18,6 +20,7 @@ public partial class EconomyManager : Node
 
     public string LastMessage { get; private set; } = string.Empty;
     public IReadOnlyList<TransactionData> History => _history;
+    public event System.Action<int>? BalanceChanged;
 
     public int Balance
     {
@@ -74,13 +77,15 @@ public partial class EconomyManager : Node
         if (Balance < total)
         {
             LastMessage = "Saldo insuficiente.";
+            Notifications.Publish("Fondos insuficientes", NoticeKind.Warning);
             return false;
         }
 
-        _balance -= total;
+        SetBalance(_balance - total);
         _inventory.AddItem(itemId, quantity);
         Record("Compra", ItemName(itemId), quantity, -total);
         LastMessage = $"Compra realizada: {quantity} x {ItemName(itemId)}.";
+        Notifications.Publish($"Compra realizada: {quantity} x {ItemName(itemId)}", NoticeKind.Success);
         return true;
     }
 
@@ -96,14 +101,37 @@ public partial class EconomyManager : Node
         if (!_inventory.RemoveItem("lettuce_harvested", quantity))
         {
             LastMessage = "No hay existencias suficientes.";
+            Notifications.Publish("Sin lechugas para vender", NoticeKind.Warning);
             return false;
         }
 
         int total = LettucePrice * quantity;
-        _balance += total;
+        SetBalance(_balance + total);
         Record("Venta", "Lechuga", quantity, total);
         LastMessage = $"Venta realizada: {quantity} lechuga(s) por {total} $.";
+        Notifications.Publish($"Venta realizada: +{total} $", NoticeKind.Success);
         return true;
+    }
+
+    public bool TrySpend(string type, string description, int amount)
+    {
+        EnsureStarted();
+        if (amount <= 0 || Balance < amount)
+        {
+            LastMessage = "Saldo insuficiente.";
+            return false;
+        }
+
+        SetBalance(_balance - amount);
+        Record(type, description, 1, -amount);
+        LastMessage = $"{description}: -{amount} $.";
+        return true;
+    }
+
+    private void SetBalance(int value)
+    {
+        _balance = value;
+        BalanceChanged?.Invoke(_balance);
     }
 
     private void Record(string type, string description, int quantity, int amount)
@@ -113,12 +141,6 @@ public partial class EconomyManager : Node
 
     private static string ItemName(string itemId)
     {
-        return itemId switch
-        {
-            "lettuce_seeds" => "Semillas de lechuga",
-            "fertilizer" => "Fertilizante",
-            "lettuce_harvested" => "Lechuga",
-            _ => itemId
-        };
+        return ItemCatalog.NameOf(itemId);
     }
 }

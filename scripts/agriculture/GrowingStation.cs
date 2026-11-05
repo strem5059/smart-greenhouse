@@ -18,6 +18,10 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 
 	public bool IsOccupied => _plant != null;
 
+	private Quickbar? SeedBar => _seedBar ??= GetTree().GetFirstNodeInGroup("quickbar") as Quickbar;
+	private Quickbar? _seedBar;
+	public CropData? Crop => _plant?.Data;
+
 	public override void _Ready()
 	{
 		_inventory = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
@@ -35,7 +39,13 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 	{
 		if (_plant == null)
 		{
-			return _inventory != null && _inventory.HasItem("lettuce_seeds", 1)
+			string? seedId = SeedBar?.EquippedItemId;
+			if (seedId == null)
+			{
+				return "[E] Sin semilla equipada";
+			}
+
+			return seedId == "lettuce_seeds" && _inventory != null && _inventory.HasItem(seedId, 1)
 				? "[E] Plantar lechuga"
 				: "[E] Sin semillas";
 		}
@@ -94,9 +104,23 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 			return;
 		}
 
-		if (!_inventory.RemoveItem("lettuce_seeds", 1))
+		string? seedId = SeedBar?.EquippedItemId;
+		if (seedId == null)
+		{
+			Notifications.Publish("Selecciona una semilla en la barra rápida", NoticeKind.Warning);
+			return;
+		}
+
+		if (seedId != "lettuce_seeds")
+		{
+			Notifications.Publish("Cultivo no disponible", NoticeKind.Warning);
+			return;
+		}
+
+		if (!_inventory.RemoveItem(seedId, 1))
 		{
 			GD.Print("[Estación] No tienes semillas de lechuga.");
+			Notifications.Publish("Semillas insuficientes", NoticeKind.Warning);
 			return;
 		}
 
@@ -108,18 +132,13 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 
 		_growthSimulator?.RegisterPlant(_plant);
 		GD.Print("[Estación] Lechuga plantada.");
+		Notifications.Publish("Lechuga plantada", NoticeKind.Info);
 	}
 
 	private void WaterPlant()
 	{
-		if (_inventory == null || !_inventory.RemoveItem("water", 1))
-		{
-			_plant?.AddWater(WaterAmount);
-			GD.Print("[Estación] Planta regada.");
-			return;
-		}
-
 		_plant?.AddWater(WaterAmount);
+		GD.Print("[Estación] Planta regada.");
 	}
 
 	private void FertilizePlant()
@@ -127,6 +146,7 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 		if (_inventory == null || !_inventory.RemoveItem("fertilizer", 1))
 		{
 			GD.Print("[Estación] No tienes fertilizante.");
+			Notifications.Publish("Fertilizante insuficiente", NoticeKind.Warning);
 			return;
 		}
 
@@ -145,7 +165,9 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 		_plant.QueueFree();
 		_plant = null;
 		_inventory?.AddItem("lettuce_harvested", 1);
-		_inventory?.AddItem("lettuce_seeds", 2);
+		_inventory?.AddItem("lettuce_seeds", 1);
 		GD.Print("[Estación] Lechuga cosechada.");
+		Notifications.Publish("+1 Lechuga", NoticeKind.Success);
+		Notifications.Publish("+1 Semilla", NoticeKind.Success);
 	}
 }

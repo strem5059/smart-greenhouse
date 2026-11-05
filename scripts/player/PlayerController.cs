@@ -26,15 +26,14 @@ public partial class PlayerController : CharacterBody3D
     private CameraMode _cameraMode = CameraMode.FirstPerson;
 
     [Export] public float InteractionRange = 2.5f;
-    private Label _interactionLabel = null!;
     private IInteractable? _currentInteractable;
 
-    private CanvasLayer _hudCanvas = null!;
-    private Label _inventoryLabel = null!;
-    private Label _controlsLabel = null!;
-    private Crosshair _crosshair = null!;
-    private InventoryManager? _inventoryManager;
+    private GameHud _hud = null!;
     private bool _inputLocked;
+    private InventoryScreen _inventory = null!;
+    private Quickbar _quickbar = null!;
+
+    private bool ControlsLocked => _inputLocked || _inventory.IsOpen;
 
     public override void _Ready()
     {
@@ -46,64 +45,14 @@ public partial class PlayerController : CharacterBody3D
         _thirdPersonPivot.TopLevel = true;
         AddToGroup("player");
         RegisterInputActions();
-        _inventoryManager = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
-        SetupHUD();
+        _quickbar = new Quickbar();
+        AddChild(_quickbar);
+        _hud = new GameHud();
+        AddChild(_hud);
+        _inventory = new InventoryScreen();
+        AddChild(_inventory);
         SetMouseCaptured(true);
         UpdateCameraMode();
-    }
-
-    private void SetupHUD()
-    {
-        _hudCanvas = new CanvasLayer
-        {
-            Layer = 10
-        };
-        AddChild(_hudCanvas);
-
-        _crosshair = new Crosshair();
-        _hudCanvas.AddChild(_crosshair);
-        _crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-
-        _interactionLabel = new Label
-        {
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Text = "[E] Interactuar"
-        };
-        _interactionLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.95f, 0.9f));
-        _interactionLabel.AddThemeFontSizeOverride("font_size", 20);
-        _hudCanvas.AddChild(_interactionLabel);
-        _interactionLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom);
-        _interactionLabel.OffsetLeft = -200;
-        _interactionLabel.OffsetRight = 200;
-        _interactionLabel.OffsetTop = -60;
-        _interactionLabel.OffsetBottom = -30;
-        _interactionLabel.Hide();
-
-        _controlsLabel = new Label
-        {
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Text = "V — Cambiar cámara\nEsc — Liberar ratón"
-        };
-        _controlsLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.9f, 0.85f));
-        _controlsLabel.AddThemeFontSizeOverride("font_size", 14);
-        _hudCanvas.AddChild(_controlsLabel);
-        _controlsLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
-        _controlsLabel.OffsetLeft = -220;
-        _controlsLabel.OffsetTop = 20;
-        _controlsLabel.OffsetRight = -20;
-        _controlsLabel.OffsetBottom = 80;
-
-        _inventoryLabel = new Label();
-        _inventoryLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.95f, 0.85f));
-        _inventoryLabel.AddThemeFontSizeOverride("font_size", 14);
-        _hudCanvas.AddChild(_inventoryLabel);
-        _inventoryLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopLeft);
-        _inventoryLabel.OffsetLeft = 20;
-        _inventoryLabel.OffsetTop = 20;
-        _inventoryLabel.OffsetRight = 220;
-        _inventoryLabel.OffsetBottom = 100;
-
-        UpdateInventoryDisplay();
     }
 
     private void RegisterInputActions()
@@ -115,6 +64,10 @@ public partial class PlayerController : CharacterBody3D
         RegisterKeyAction("jump", Key.Space);
         RegisterKeyAction("change_camera", Key.V);
         RegisterKeyAction("interact", Key.E);
+        RegisterKeyAction("toggle_inventory", Key.Tab);
+        RegisterKeyAction("quickbar_1", Key.Key1);
+        RegisterKeyAction("quickbar_2", Key.Key2);
+        RegisterKeyAction("quickbar_3", Key.Key3);
     }
 
     private static void RegisterKeyAction(string action, Key key)
@@ -131,9 +84,33 @@ public partial class PlayerController : CharacterBody3D
 
     public override void _Input(InputEvent @event)
     {
-        if (_inputLocked)
+        if (@event.IsActionPressed("toggle_inventory") && !_inputLocked)
+        {
+            ToggleInventory();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (_inventory.IsOpen && @event.IsActionPressed("ui_cancel"))
+        {
+            CloseInventory();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (ControlsLocked)
         {
             return;
+        }
+
+        for (int i = 0; i < Quickbar.SlotCount; i++)
+        {
+            if (@event.IsActionPressed($"quickbar_{i + 1}"))
+            {
+                _quickbar.Select(i);
+                GetViewport().SetInputAsHandled();
+                return;
+            }
         }
 
         if (@event is InputEventMouseMotion mouseMotion && Input.MouseMode == Input.MouseModeEnum.Captured)
@@ -181,12 +158,12 @@ public partial class PlayerController : CharacterBody3D
             velocity += GetGravity() * GravityScale * (float)delta;
         }
 
-        if (Input.IsActionJustPressed("jump") && IsOnFloor() && !_inputLocked)
+        if (Input.IsActionJustPressed("jump") && IsOnFloor() && !ControlsLocked)
         {
             velocity.Y = JumpVelocity;
         }
 
-        Vector2 inputDir = _inputLocked ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_forward", "move_back");
+        Vector2 inputDir = ControlsLocked ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_forward", "move_back");
         Basis moveBasis = _cameraMode == CameraMode.ThirdPerson ? _thirdPersonPivot.GlobalTransform.Basis : Transform.Basis;
         Vector3 direction = moveBasis * new Vector3(inputDir.X, 0, inputDir.Y).Normalized();
 
@@ -212,34 +189,21 @@ public partial class PlayerController : CharacterBody3D
 
         _thirdPersonPivot.GlobalPosition = GlobalPosition + new Vector3(0, ThirdPersonHeight, 0);
         UpdateInteraction();
-        UpdateInventoryDisplay();
-    }
-
-    private void UpdateInventoryDisplay()
-    {
-        if (_inventoryManager == null || _inventoryLabel == null)
-        {
-            return;
-        }
-
-        int seeds = _inventoryManager.GetQuantity("lettuce_seeds");
-        int fertilizer = _inventoryManager.GetQuantity("fertilizer");
-        int harvest = _inventoryManager.GetQuantity("lettuce_harvested");
-        _inventoryLabel.Text = $"SEMILLAS       {seeds}\nFERTILIZANTE   {fertilizer}\nCOSECHA        {harvest}";
     }
 
     private void UpdateInteraction()
     {
-        if (_inputLocked)
+        _currentInteractable = null;
+        if (ControlsLocked)
         {
-            _currentInteractable = null;
-            _interactionLabel.Hide();
+            _hud.SetObserved(null);
             return;
         }
 
         var camera = GetActiveCamera();
         if (camera == null)
         {
+            _hud.SetObserved(null);
             return;
         }
 
@@ -255,14 +219,9 @@ public partial class PlayerController : CharacterBody3D
         if (result.Count > 0 && result["collider"].AsGodotObject() is IInteractable interactable)
         {
             _currentInteractable = interactable;
-            _interactionLabel.Text = interactable.GetInteractionPrompt();
-            _interactionLabel.Show();
         }
-        else
-        {
-            _currentInteractable = null;
-            _interactionLabel.Hide();
-        }
+
+        _hud.SetObserved(_currentInteractable);
     }
 
     private Camera3D? GetActiveCamera()
@@ -304,16 +263,45 @@ public partial class PlayerController : CharacterBody3D
         _thirdPersonCamera.Current = _cameraMode == CameraMode.ThirdPerson;
     }
 
+    private void ToggleInventory()
+    {
+        if (_inventory.IsOpen)
+        {
+            CloseInventory();
+        }
+        else
+        {
+            OpenInventory();
+        }
+    }
+
+    private void OpenInventory()
+    {
+        _inventory.Open();
+        _currentInteractable = null;
+        _hud.SetObserved(null);
+        _hud.SetInventoryMode(true);
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+    }
+
+    private void CloseInventory()
+    {
+        _inventory.Close();
+        _hud.SetInventoryMode(false);
+        SetMouseCaptured(true);
+    }
+
     public void SetInputLocked(bool locked)
     {
         _inputLocked = locked;
         _currentInteractable = null;
-        _interactionLabel.Hide();
+        _hud.SetObserved(null);
+        _hud.SetHudVisible(!locked);
 
         if (locked)
         {
             Input.MouseMode = Input.MouseModeEnum.Visible;
-            _crosshair.Visible = false;
+            _hud.SetCrosshairVisible(false);
             Velocity = new Vector3(0, Velocity.Y, 0);
         }
         else
@@ -325,6 +313,6 @@ public partial class PlayerController : CharacterBody3D
     private void SetMouseCaptured(bool captured)
     {
         Input.MouseMode = captured ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
-        _crosshair.Visible = captured;
+        _hud.SetCrosshairVisible(captured);
     }
 }

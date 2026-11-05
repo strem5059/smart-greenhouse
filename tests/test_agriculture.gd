@@ -34,6 +34,9 @@ func _init():
 	call_deferred("_start")
 
 func _start():
+	get_first_node_in_group("quickbar").call("Assign", 0, "lettuce_seeds")
+	get_first_node_in_group("quickbar").call("Select", 0)
+
 	# Plant
 	print("Calling Interact...")
 	station.call("Interact")

@@ -1,11 +1,27 @@
 [gd_scene format=3 uid="uid://c5vu877kjgyp7"]
 
+[ext_resource type="Script" uid="uid://bnnotyst3mcef" path="res://scripts/expansion/ExpansionManager.cs" id="expansion_script"]
 [ext_resource type="PackedScene" uid="uid://cufncs8ygidn2" path="res://scenes/player/player.tscn" id="ext_ae477b2c7"]
 [ext_resource type="Script" uid="uid://c8052i5po3jgy" path="res://scripts/agriculture/GrowingStation.cs" id="growing_f198e"]
 [ext_resource type="PackedScene" uid="uid://vetg8abh2bp5" path="res://scenes/crops/lettuce.tscn" id="lettuce_eaf45"]
+[ext_resource type="PackedScene" uid="uid://bv5wtdmnuymcm" path="res://scenes/office/office.tscn" id="office_inst"]
 [ext_resource type="PackedScene" uid="uid://dyxpod1iw716f" path="res://scenes/crops/pot_with_soil.tscn" id="pot_fb85a467c"]
 
-[ext_resource type="PackedScene" path="res://scenes/office/office.tscn" id="office_inst"]
+[sub_resource type="BoxMesh" id="GlassGapMeshN"]
+size = Vector3(0.1, 5, 2.25)
+
+[sub_resource type="StandardMaterial3D" id="StdMat_f7989f"]
+transparency = 1
+albedo_color = Color(0.7, 0.9, 0.95, 0.35)
+
+[sub_resource type="BoxShape3D" id="GlassGapShapeN"]
+size = Vector3(0.1, 5, 2.25)
+
+[sub_resource type="BoxMesh" id="GlassGapMeshS"]
+size = Vector3(0.1, 5, 8.25)
+
+[sub_resource type="BoxShape3D" id="GlassGapShapeS"]
+size = Vector3(0.1, 5, 8.25)
 
 [sub_resource type="Environment" id="Env_c2e530690"]
 background_mode = 2
@@ -138,16 +154,6 @@ transparency = 1
 albedo_color = Color(0.7, 0.9, 0.95, 0.35)
 
 [sub_resource type="BoxShape3D" id="BoxShape_ee27"]
-size = Vector3(0.1, 5, 12)
-
-[sub_resource type="BoxMesh" id="BoxMesh_3c63f"]
-size = Vector3(0.1, 5, 12)
-
-[sub_resource type="StandardMaterial3D" id="StdMat_f7989f"]
-transparency = 1
-albedo_color = Color(0.7, 0.9, 0.95, 0.35)
-
-[sub_resource type="BoxShape3D" id="BoxShape_d0ab"]
 size = Vector3(0.1, 5, 12)
 
 [sub_resource type="BoxMesh" id="BoxMesh_869b9"]
@@ -439,38 +445,26 @@ size = Vector3(0.5, 0.08, 0.5)
 [sub_resource type="BoxShape3D" id="BoxShape_station23"]
 size = Vector3(0.5, 0.08, 0.5)
 
-[sub_resource type="BoxMesh" id="GlassGapMeshN"]
-size = Vector3(0.1, 5, 2.25)
-
-[sub_resource type="BoxShape3D" id="GlassGapShapeN"]
-size = Vector3(0.1, 5, 2.25)
-
-[sub_resource type="BoxMesh" id="GlassGapMeshS"]
-size = Vector3(0.1, 5, 8.25)
-
-[sub_resource type="BoxShape3D" id="GlassGapShapeS"]
-size = Vector3(0.1, 5, 8.25)
-
 [node name="Greenhouse" type="Node3D" unique_id=1194089454]
 
-[node name="GlassWallRightN" type="StaticBody3D" parent="."]
+[node name="GlassWallRightN" type="StaticBody3D" parent="." unique_id=1173111307]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.9, 2.5, -4.875)
 
-[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightN"]
+[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightN" unique_id=2009834133]
 mesh = SubResource("GlassGapMeshN")
 surface_material_override/0 = SubResource("StdMat_f7989f")
 
-[node name="Collision" type="CollisionShape3D" parent="GlassWallRightN"]
+[node name="Collision" type="CollisionShape3D" parent="GlassWallRightN" unique_id=453258531]
 shape = SubResource("GlassGapShapeN")
 
-[node name="GlassWallRightS" type="StaticBody3D" parent="."]
+[node name="GlassWallRightS" type="StaticBody3D" parent="." unique_id=1787360116]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.9, 2.5, 1.875)
 
-[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightS"]
+[node name="Mesh" type="MeshInstance3D" parent="GlassWallRightS" unique_id=513432995]
 mesh = SubResource("GlassGapMeshS")
 surface_material_override/0 = SubResource("StdMat_f7989f")
 
-[node name="Collision" type="CollisionShape3D" parent="GlassWallRightS"]
+[node name="Collision" type="CollisionShape3D" parent="GlassWallRightS" unique_id=1031377084]
 shape = SubResource("GlassGapShapeS")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=811488973]
@@ -810,28 +804,28 @@ surface_material_override/0 = SubResource("StdMat_62309e")
 [node name="Collision" type="CollisionShape3D" parent="Channel7" unique_id=1114990463]
 shape = SubResource("BoxShape_ed32")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation0" unique_id=57199603]
+[node name="GrowingStation0#Collision" type="CollisionShape3D" parent="." unique_id=57199603]
 shape = SubResource("BoxShape_7d5e")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation1" unique_id=2031420891]
+[node name="GrowingStation1#Collision" type="CollisionShape3D" parent="." unique_id=2031420891]
 shape = SubResource("BoxShape_0bbf")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation2" unique_id=1231612118]
+[node name="GrowingStation2#Collision" type="CollisionShape3D" parent="." unique_id=1231612118]
 shape = SubResource("BoxShape_e0c4")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation3" unique_id=16482035]
+[node name="GrowingStation3#Collision" type="CollisionShape3D" parent="." unique_id=16482035]
 shape = SubResource("BoxShape_f8fb")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation4" unique_id=2097567804]
+[node name="GrowingStation4#Collision" type="CollisionShape3D" parent="." unique_id=2097567804]
 shape = SubResource("BoxShape_558b")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation5" unique_id=1535157404]
+[node name="GrowingStation5#Collision" type="CollisionShape3D" parent="." unique_id=1535157404]
 shape = SubResource("BoxShape_6a8c")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation6" unique_id=1161033993]
+[node name="GrowingStation6#Collision" type="CollisionShape3D" parent="." unique_id=1161033993]
 shape = SubResource("BoxShape_139b")
 
-[node name="Collision" type="CollisionShape3D" parent="GrowingStation7" unique_id=1784056938]
+[node name="GrowingStation7#Collision" type="CollisionShape3D" parent="." unique_id=1784056938]
 shape = SubResource("BoxShape_002e")
 
 [node name="PipeMain-4.5" type="StaticBody3D" parent="." unique_id=76444629]
@@ -864,224 +858,227 @@ surface_material_override/0 = SubResource("StdMat_c2f0fc")
 [node name="Collision" type="CollisionShape3D" parent="PipeInterconnect" unique_id=823076134]
 shape = SubResource("BoxShape_c4d3")
 
-[node name="GrowingStation0" type="StaticBody3D" parent="."]
+[node name="GrowingStation0" type="StaticBody3D" parent="." unique_id=940498360]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation0"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation0" unique_id=1922318439]
 shape = SubResource("BoxShape_station0")
 
-[node name="GrowingStation1" type="StaticBody3D" parent="."]
+[node name="GrowingStation1" type="StaticBody3D" parent="." unique_id=1184244832]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation1"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation1" unique_id=1738923598]
 shape = SubResource("BoxShape_station1")
 
-[node name="GrowingStation2" type="StaticBody3D" parent="."]
+[node name="GrowingStation2" type="StaticBody3D" parent="." unique_id=952294360]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation2"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation2" unique_id=1730449334]
 shape = SubResource("BoxShape_station2")
 
-[node name="GrowingStation3" type="StaticBody3D" parent="."]
+[node name="GrowingStation3" type="StaticBody3D" parent="." unique_id=1931436201]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation3"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation3" unique_id=459985769]
 shape = SubResource("BoxShape_station3")
 
-[node name="GrowingStation4" type="StaticBody3D" parent="."]
+[node name="GrowingStation4" type="StaticBody3D" parent="." unique_id=1866751342]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation4"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation4" unique_id=1171435111]
 shape = SubResource("BoxShape_station4")
 
-[node name="GrowingStation5" type="StaticBody3D" parent="."]
+[node name="GrowingStation5" type="StaticBody3D" parent="." unique_id=1464674606]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation5"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation5" unique_id=253812365]
 shape = SubResource("BoxShape_station5")
 
-[node name="GrowingStation6" type="StaticBody3D" parent="."]
+[node name="GrowingStation6" type="StaticBody3D" parent="." unique_id=196351386]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation6"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation6" unique_id=374007895]
 shape = SubResource("BoxShape_station6")
 
-[node name="GrowingStation7" type="StaticBody3D" parent="."]
+[node name="GrowingStation7" type="StaticBody3D" parent="." unique_id=580202307]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation7"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation7" unique_id=535181832]
 shape = SubResource("BoxShape_station7")
 
-[node name="GrowingStation8" type="StaticBody3D" parent="."]
+[node name="GrowingStation8" type="StaticBody3D" parent="." unique_id=1980567019]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation8"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation8" unique_id=1754250524]
 shape = SubResource("BoxShape_station8")
 
-[node name="GrowingStation9" type="StaticBody3D" parent="."]
+[node name="GrowingStation9" type="StaticBody3D" parent="." unique_id=1756697519]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation9"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation9" unique_id=2099000445]
 shape = SubResource("BoxShape_station9")
 
-[node name="GrowingStation10" type="StaticBody3D" parent="."]
+[node name="GrowingStation10" type="StaticBody3D" parent="." unique_id=374275492]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation10"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation10" unique_id=521051843]
 shape = SubResource("BoxShape_station10")
 
-[node name="GrowingStation11" type="StaticBody3D" parent="."]
+[node name="GrowingStation11" type="StaticBody3D" parent="." unique_id=1349288763]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation11"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation11" unique_id=917337200]
 shape = SubResource("BoxShape_station11")
 
-[node name="GrowingStation12" type="StaticBody3D" parent="."]
+[node name="GrowingStation12" type="StaticBody3D" parent="." unique_id=1328061711]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation12"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation12" unique_id=39879904]
 shape = SubResource("BoxShape_station12")
 
-[node name="GrowingStation13" type="StaticBody3D" parent="."]
+[node name="GrowingStation13" type="StaticBody3D" parent="." unique_id=383681843]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation13"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation13" unique_id=227618968]
 shape = SubResource("BoxShape_station13")
 
-[node name="GrowingStation14" type="StaticBody3D" parent="."]
+[node name="GrowingStation14" type="StaticBody3D" parent="." unique_id=1977161264]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 1.18, -4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation14"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation14" unique_id=1087157333]
 shape = SubResource("BoxShape_station14")
 
-[node name="GrowingStation15" type="StaticBody3D" parent="."]
+[node name="GrowingStation15" type="StaticBody3D" parent="." unique_id=411218854]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation15"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation15" unique_id=1578107571]
 shape = SubResource("BoxShape_station15")
 
-[node name="GrowingStation16" type="StaticBody3D" parent="."]
+[node name="GrowingStation16" type="StaticBody3D" parent="." unique_id=1994430743]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation16"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation16" unique_id=1370962832]
 shape = SubResource("BoxShape_station16")
 
-[node name="GrowingStation17" type="StaticBody3D" parent="."]
+[node name="GrowingStation17" type="StaticBody3D" parent="." unique_id=1337175465]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 1.18, -1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation17"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation17" unique_id=198489484]
 shape = SubResource("BoxShape_station17")
 
-[node name="GrowingStation18" type="StaticBody3D" parent="."]
+[node name="GrowingStation18" type="StaticBody3D" parent="." unique_id=560735434]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation18"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation18" unique_id=1588445927]
 shape = SubResource("BoxShape_station18")
 
-[node name="GrowingStation19" type="StaticBody3D" parent="."]
+[node name="GrowingStation19" type="StaticBody3D" parent="." unique_id=1229402671]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation19"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation19" unique_id=1337519820]
 shape = SubResource("BoxShape_station19")
 
-[node name="GrowingStation20" type="StaticBody3D" parent="."]
+[node name="GrowingStation20" type="StaticBody3D" parent="." unique_id=1651934578]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 1.18, 1.5)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation20"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation20" unique_id=504579274]
 shape = SubResource("BoxShape_station20")
 
-[node name="GrowingStation21" type="StaticBody3D" parent="."]
+[node name="GrowingStation21" type="StaticBody3D" parent="." unique_id=1411565713]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation21"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation21" unique_id=750046664]
 shape = SubResource("BoxShape_station21")
 
-[node name="GrowingStation22" type="StaticBody3D" parent="."]
+[node name="GrowingStation22" type="StaticBody3D" parent="." unique_id=1655663130]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation22"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation22" unique_id=1510323360]
 shape = SubResource("BoxShape_station22")
 
-[node name="GrowingStation23" type="StaticBody3D" parent="."]
+[node name="GrowingStation23" type="StaticBody3D" parent="." unique_id=1005230368]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 1.18, 4)
 script = ExtResource("growing_f198e")
 PlantScene = ExtResource("lettuce_eaf45")
 PotWithSoilScene = ExtResource("pot_fb85a467c")
 
-[node name="Collision" type="CollisionShape3D" parent="./GrowingStation23"]
+[node name="Collision" type="CollisionShape3D" parent="GrowingStation23" unique_id=446749462]
 shape = SubResource("BoxShape_station23")
 
-[node name="Office" parent="." instance=ExtResource("office_inst")]
+[node name="Office" parent="." unique_id=2050238901 instance=ExtResource("office_inst")]
 transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0.8, 0, 0)
 
 [node name="Player" parent="." unique_id=1767821126 instance=ExtResource("ext_ae477b2c7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="ExpansionManager" type="Node" parent="." unique_id=2133913487]
+script = ExtResource("expansion_script")

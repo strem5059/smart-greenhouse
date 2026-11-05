@@ -128,3 +128,236 @@ Día 2 terminado. Día 3 implementado; pendiente de validación manual en el edi
 
 ### Siguiente paso (Día 3)
 Economía y panel: saldo, compra/venta, almacén e interfaz administrativa.
+
+---
+
+## Día 3 — Cierre: expansión modular y correcciones (estado actualizado)
+
+### Decisiones autorizadas por el supervisor
+- Expansión mediante gestor modular que reutiliza los nodos arquitectónicos del invernadero (`scripts/expansion/ExpansionManager.cs`).
+- Cada módulo es una réplica completa: 24 `GrowingStation` nuevas, coste **250 $** (`EconomyManager.ExpansionPrice`) y valores económicos existentes sin cambios.
+- Agua gratuita e ilimitada; se eliminó la comprobación de un artículo `water` inexistente.
+
+### Cambios
+- `GrowingStation`: el riego ya no consulta inventario; la cosecha entrega **1 semilla** (antes 2).
+- `EconomyManager`: `ExpansionPrice` centralizado y `TrySpend()` para cobros únicos registrados en el historial como `Expansión`.
+- `ExpansionManager` (nuevo, nodo hijo de `greenhouse.tscn`):
+  - Duplica suelo, columnas, vigas, cristales, mesas, canales y tuberías del módulo base (20 × 12 m).
+  - Crea 24 estaciones nuevas (`GrowingStation24…47` para el primer módulo) con las mismas exportaciones y colisión.
+  - Cuatro direcciones: Izquierda, Derecha, Frente (−Z), Atrás (+Z).
+  - Elimina el cristal de la cara compartida para conectar ambos módulos; el módulo nuevo no duplica su cara compartida.
+  - Colisión con la oficina y con módulos existentes mediante rectángulos de obstáculos y rejilla de celdas; si el destino está ocupado o bloqueado, no se compra.
+  - Genera el módulo antes de cobrar; si el cobro falla, libera el módulo. No hay cobro duplicado.
+- `ManagementPanel`: pestaña **Expansión** real con saldo, coste, faltante de fondos, estado de cada dirección y confirmación con saldo restante y capacidad adicional. Sustituye el botón deshabilitado.
+- Lanzadores `.cmd`: rutas relativas al proyecto (`%~dp0`) y ejecutable de Godot mediante la variable `GODOT_EXE`, con valor por defecto en `%USERPROFILE%\Downloads\…`.
+- `tests/test_loader.gd`: corregida la ruta de la cámara de tercera persona.
+- `tests/test_expansion.gd` (nuevo).
+
+### Pruebas ejecutadas (headless, Godot 4.7.2 Mono)
+| Prueba | Resultado |
+|---|---|
+| `dotnet build SmartGreenhouse.csproj` | 0 errores, 0 advertencias |
+| `test_expansion.gd` | **passed**, exit 0 |
+| `test_economy.gd` | **passed** |
+| `test_agriculture.gd` | **passed** |
+| `test_loader.gd` | Todas las comprobaciones OK; el proceso terminó con código 1 por avisos de fugas de recursos al cerrar (ver pendientes) |
+
+### No verificado todavía
+- Visualización 3D real de los módulos, alineación de juntas y tamaño percibido. Solo se verificó por estructura y nodos generados.
+- Recorrido manual con jugador: caminar a la oficina, abrir panel con E, animaciones, bloqueo de controles y compra desde la interfaz.
+- Mensajes `[E]` sobre las estaciones nuevas.
+- Iluminación interior de los módulos nuevos: no tienen luces propias; dependen de la luz direccional.
+- Guardado permanente: las ampliaciones existen solo durante la sesión.
+
+### Pendientes conocidos
+- `ExpansionManager.cs` no tiene `.uid` todavía; Godot lo generará al abrir el proyecto en el editor.
+- `greenhouse.tscn` referencia el script por ruta (sin UID) para evitar generar UIDs manualmente.
+- `test_loader.gd` devuelve código 1 al cerrar por fugas de recursos del motor; no se comprobó si ocurre también antes de estos cambios.
+- `test_scene.tscn` sigue siendo un smoke test de dos segundos.
+- Día 4 (robots), Día 5 (programación visual) y Día 6 (automatización) no iniciados.
+
+### Estado del Día 3
+**Parcialmente terminado: pendiente de validación visual y manual.** Toda la lógica de economía y expansión está implementada y comprobada en pruebas headless; la aceptación final requiere revisar el flujo en el editor.
+
+---
+
+## Precierre Día 3 — Subfase 3.1: HUD y experiencia visual
+
+### Componentes del HUD (`scripts/interfaces/GameHud.cs`)
+- Creado por `PlayerController._Ready` y sustituye las etiquetas anteriores (`SetupHUD`, `UpdateInventoryDisplay`).
+- **Saldo:** sincronizado con `EconomyManager.BalanceChanged`; animación de color y escala al cambiar. No tiene variable propia.
+- **Recursos:** semillas, fertilizante y lechugas leídos de `InventoryManager` en cada frame.
+- **Puntero:** `Crosshair` reutilizado, ahora con contorno oscuro para contrastar con fondos claros.
+- **Interacción:** tarjeta inferior con tecla y acción derivadas de `IInteractable.GetInteractionPrompt()`. Las acciones que empiezan por "Sin" se muestran atenuadas. Aparece con animación de fundido.
+- **Información agrícola:** tarjeta derecha visible solo al observar una estación ocupada. Muestra nombre, etapa, progreso, agua, nutrientes y salud desde `CropData` (`GrowingStation.Crop`). No recalcula crecimiento.
+- **Notificaciones:** pila superior con hasta 4 avisos, fundido de entrada y salida, codificación por color (éxito, advertencia, información). Se ocultan mientras el panel administrativo está abierto.
+- **Barra rápida:** tres ranuras vacías (`QuickSlot1..3`) preparadas en la parte inferior. Sin funcionalidad.
+- **Controles:** indicación compacta de `V` y `Esc` arriba a la derecha.
+
+### Canal de notificaciones (`scripts/interfaces/Notifications.cs`)
+- Evento estático `Notifications.Published` y método `Publish(texto, tipo)`.
+- Cada operación publica en un único punto:
+  - `GrowingStation`: `Semillas insuficientes`, `Fertilizante insuficiente`, `Lechuga plantada`, `+1 Lechuga` y `+1 Semilla` (cosecha).
+  - `EconomyManager`: `Compra realizada`, `Venta realizada`, `Fondos insuficientes`, `Sin lechugas para vender`.
+  - `ExpansionManager`: `Expansión adquirida`.
+- El panel administrativo no publica notificaciones; mantiene su mensaje de pie.
+
+### Cambios en sistemas existentes
+- `PlayerController`: reescrito para delegar en `GameHud`. Movimiento, cámaras, raycast e input no cambian. `SetInputLocked` oculta el HUD y `SetMouseCaptured` controla el apuntador.
+- `EconomyManager`: nuevo evento `BalanceChanged` (todas las modificaciones de saldo pasan por `SetBalance`).
+- `GrowingStation`: propiedad `Crop` y publicación de notificaciones. El riego sigue sin inventario.
+- `Crosshair`: contorno oscuro y dibujo en dos capas.
+
+### Archivos modificados o creados
+- Nuevos: `scripts/interfaces/GameHud.cs`, `scripts/interfaces/Notifications.cs`.
+- Modificados: `scripts/player/PlayerController.cs`, `scripts/player/Crosshair.cs`, `scripts/economy/EconomyManager.cs`, `scripts/agriculture/GrowingStation.cs`, `scripts/expansion/ExpansionManager.cs`.
+
+### Pruebas (headless, Godot 4.7.2 Mono)
+| Prueba | Resultado |
+|---|---|
+| `dotnet build SmartGreenhouse.csproj` | 0 errores, 0 advertencias |
+| `test_expansion.gd` | passed, exit 0 |
+| `test_economy.gd` | passed, exit 0 |
+| `test_agriculture.gd` | passed, exit 0 |
+| `tests/test_scene.tscn` (carga real de la escena con HUD) | passed, exit 0; sin excepciones de C# ni errores de script |
+
+### No verificado visualmente
+- Disposición real en pantalla, legibilidad de textos y contraste del apuntador.
+- Animaciones de saldo, fundidos de notificaciones y del aviso de interacción.
+- Comportamiento en distintas resoluciones y relación del HUD con el panel administrativo.
+- Visibilidad de la tarjeta de cultivo al mirar cada estación.
+- Interacción de la barra rápida: no implementada, solo preparada.
+
+### Pendientes
+- Verificar en el editor todos los puntos de la sección anterior.
+- Las notificaciones de compra realizadas dentro del panel no se muestran, porque el HUD está oculto mientras el panel está abierto. Se ve el mensaje del pie del panel.
+- Los avisos de cultivo se muestran solo para la estación observada.
+
+### Preparado para la subfase 3.2
+- `GameHud.Quickbar` expone el contenedor inferior con las ranuras `QuickSlot1..3`.
+- `Notifications` es el canal único para avisos.
+- La tarjeta de cultivo y la barra de recursos se pueden ampliar sin tocar la lógica de interacción.
+
+### Estado
+**Subfase 3.1 implementada y comprobada en pruebas headless; pendiente de revisión visual del supervisor.** No se ha iniciado la subfase 3.2.
+
+---
+
+## Subfase 3.2 — Bloque A: corrección del hueco de expansión
+
+- Causa: los módulos de Frente y Atrás copiaban `GlassWallRightN/S` del invernadero, cuyo hueco es el de la puerta de la oficina. Daba al vacío exterior y permitía salir del mapa.
+- Solución (opción A): las plantillas omiten `GlassWallRightN/S` y cada módulo recibe una pared este completa `GlassWallRightFull` (0.1 × 5 × 12, en x = +9.9). Se omite si esa cara es la compartida con el módulo de origen.
+- La base y la oficina no cambian; el hueco original se conserva.
+- Archivos: `scripts/expansion/ExpansionManager.cs`, `tests/test_expansion.gd`.
+- Prueba headless: `test_expansion.gd` passed, código 0. Comprueba el hueco de la base, la ausencia de hueco y la pared completa en un módulo frontal, y que la cara frontal de la base se retira al conectar.
+- Pendiente: verificación visual en el editor (junta entre módulos y que el jugador no puede salir por la pared este).
+- Límite de beta autorizado: **4 módulos en total** (base + 3 ampliaciones), equivalente a 72 estaciones adicionales. Constante `ExpansionManager.MaxModules`; nuevo estado `LimitReached` que muestra "Límite de beta alcanzado" en el panel. Probado en `test_expansion.gd` (passed, código 0).
+- Para subir el límite en fases posteriores basta con cambiar `MaxModules`; no se han implementado nuevos tipos de módulo (opción B descartada por ahora).
+
+---
+
+## Subfase 3.2 — Bloque B: inventario visual
+
+- **Catálogo:** `scripts/inventory/ItemCatalog.cs` define id, nombre, descripción, categoría y color de icono de los tres objetos existentes (semillas de lechuga, lechuga, fertilizante). `EconomyManager.ItemName` lo usa; los precios no cambian.
+- **Inventario:** `InventoryManager` añade el evento `Changed`. No cambia su almacenamiento.
+- **Interfaz:** `scripts/interfaces/InventoryScreen.cs` (capa 15, por debajo del panel administrativo en capa 20). Incluye categorías, celdas con icono dibujado y cantidad, panel de detalle y apertura/cierre animados. `InventorySlot` es la celda; dibuja la representación del objeto arrastrado con `SetDragPreview`.
+- **Controles:** TAB abre y cierra el inventario. Mientras está abierto, se bloquean movimiento, cámara e interacción (`ControlsLocked`), el HUD se oculta y el cursor queda visible. ESC lo cierra y la pulsación se consume. No se abre con el panel administrativo abierto.
+- **Arrastre:** las celdas inician el arrastre con el botón izquierdo. No hay destinos de soltar: eso corresponde al Bloque C. Arrastrar no modifica cantidades.
+- **Archivos:** nuevos `scripts/inventory/ItemCatalog.cs`, `scripts/interfaces/InventoryScreen.cs`, `tests/test_inventory.gd`. Modificados `scripts/inventory/InventoryManager.cs`, `scripts/economy/EconomyManager.cs`, `scripts/player/PlayerController.cs`.
+- **Pruebas headless:** `test_inventory.gd` passed, código 0; `test_scene.tscn` passed, código 0, carga la escena con inventario y HUD sin excepciones; `test_economy.gd` passed, código 0.
+- **Pendiente de verificación visual en el editor:** apertura y cierre con TAB y ESC, cursor, bloqueo del jugador, disposición de la cuadrícula, legibilidad de iconos y que el arrastre muestra la vista previa.
+- **Preparado para el Bloque C:** `InventorySlot` expone `Item` y `Count`; el arrastre ya envía `item_id` en el diccionario de datos, que el destino de la barra rápida puede leer en `_CanDropData`/`_DropData`; el panel de detalle puede mostrar la asignación más adelante.
+
+---
+
+## Subfase 3.2 — Bloque C: barra rápida y selección de semillas
+
+- **Estado:** `scripts/inventory/Quickbar.cs` (nodo hijo del jugador, grupo `quickbar`). Guarda solo identificadores de semillas en tres ranuras y la ranura seleccionada. Las cantidades siguen en `InventoryManager`. Solo acepta objetos de la categoría Semillas, y no acepta tipos sin existencias.
+- **Vista:** `scripts/interfaces/QuickbarBar.cs` (`QuickbarBar` y `QuickbarSlot`). Muestra número, icono, cantidad, resalte de la ranura seleccionada y el nombre y cantidad de la semilla equipada. Acepta soltar objetos del inventario (sustituye) y arrastres entre ranuras (intercambia).
+- **Teclas:** 1, 2 y 3 seleccionan las ranuras mediante `quickbar_1..3`. Están bloqueadas mientras los controles están bloqueados (panel administrativo o inventario).
+- **HUD:** con el inventario abierto, la barra permanece visible y el resto del HUD se oculta (`GameHud.SetInventoryMode`). El panel administrativo sigue ocultando todo el HUD.
+- **Iconos:** `scripts/interfaces/ItemIconDrawer.cs` centraliza el dibujo de iconos, usado por inventario y barra.
+- **Agricultura:** plantar sigue descontando una semilla mediante el sistema existente. Que la estación plante la semilla equipada corresponde al Bloque D y no se ha modificado.
+- **Archivos:** nuevos `scripts/inventory/Quickbar.cs`, `scripts/interfaces/QuickbarBar.cs`, `scripts/interfaces/ItemIconDrawer.cs`, `tests/test_quickbar.gd`. Modificados `scripts/interfaces/GameHud.cs`, `scripts/interfaces/InventoryScreen.cs` (usa `ItemIconDrawer`), `scripts/player/PlayerController.cs`.
+- **Pruebas headless:**
+  - `test_quickbar.gd`: passed, código 0. Comprueba asignación válida e inválida, que asignar no consume, equipar ranura vacía y con lechuga, que plantar descuenta exactamente una semilla, que la selección se conserva, que una ranura conserva el tipo con cantidad cero y no permite reasignarlo sin existencias, y el intercambio entre ranuras.
+  - `test_inventory.gd`: passed, código 0.
+  - `test_scene.tscn`: passed, código 0, sin excepciones.
+  - `test_agriculture.gd`: passed, código 0.
+- **Pendiente de verificación visual en el editor:** arrastre desde el inventario a la barra, intercambio entre ranuras, resalte, teclas 1-3, que el HUD se oculta correctamente al abrir el inventario y el panel administrativo, y que TAB, ESC, E y las cámaras no entran en conflicto.
+- **Pendiente para el Bloque D:** la estación debe plantar la semilla equipada en lugar de solo lechugas, y mostrar mensajes `[E] Plantar <cultivo>`.
+
+---
+
+## Subfase 3.2 — Bloque D: integración agrícola
+
+- `GrowingStation` consulta la semilla equipada en la barra rápida (`SeedBar`, búsqueda perezosa en el grupo `quickbar`, porque la estación puede inicializarse antes que el jugador).
+- Sin semilla equipada: no planta y muestra "Selecciona una semilla en la barra rápida". Con una semilla que no tiene cultivo: "Cultivo no disponible". Sin existencias: "Semillas insuficientes".
+- Mensajes: "[E] Sin semilla equipada", "[E] Plantar lechuga" o "[E] Sin semillas", según la selección y las existencias.
+- Plantar descuenta exactamente una semilla de la ranura equipada, mediante `InventoryManager`.
+- Solo existe el cultivo de lechuga; no se han añadido cultivos.
+- Archivos: `scripts/agriculture/GrowingStation.cs`, `tests/test_agriculture.gd`, `tests/test_expansion.gd`, `tests/test_quickbar.gd`.
+- Pruebas headless:
+  - `test_quickbar.gd`: passed, código 0. Incluye sin semilla equipada (no consume, no planta, mensaje) y con lechuga equipada (mensaje).
+  - `test_agriculture.gd`: passed. Planta con la semilla equipada, cosecha y devuelve una semilla.
+  - `test_expansion.gd`: passed. Las estaciones de los módulos nuevos plantan con la semilla equipada.
+  - `test_scene.tscn`: passed, sin excepciones.
+- Nota: en la última ejecución no quedó capturado el código de salida de `test_agriculture`, `test_expansion` y `test_scene`. Los tres mostraron su mensaje de éxito y no hubo errores de script.
+- Pendiente de verificación visual en el editor: que el mensaje contextual cambie según la ranura equipada y que plantar desde el HUD funcione con E.
+
+---
+
+## Corrección de arrastre inventario → barra rápida (Bloque C)
+
+- **Causa:** la raíz del inventario (capa 15) era un `Control` con `MouseFilter = Stop` a pantalla completa, así que capturaba los eventos del ratón sobre la barra rápida (capa 10). Además, el panel centrado solapaba la zona de las ranuras.
+- **Solución:** en `InventoryScreen`, raíz y fondo con `MouseFilter = Ignore`; el panel ocupa el espacio por encima de la barra mediante anclajes (margen superior 56 px, inferior 170 px).
+- **Archivos:** `scripts/interfaces/InventoryScreen.cs`, `tests/test_inventory.gd`.
+- **Pruebas headless:** `test_inventory.gd` passed (comprueba el filtro de la raíz y que el panel no tapa la barra en 1280×720). `test_quickbar.gd` y `test_scene.tscn` passed.
+- **Limitación:** con alturas inferiores a unos 650 px, el panel (altura mínima ≈436 px) podría solaparse con la barra. Pendiente de decisión si se quiere soportar esas resoluciones.
+- **Pendiente de verificación visual:** arrastre real a cada una de las tres ranuras, sustitución, soltar fuera y control del cursor con el inventario abierto.
+- **Punto de control Git:** rama `checkpoint/precierre-3-2` creada en el commit `616f746`. No contiene los cambios sin confirmar, que siguen en el árbol de trabajo. No se ha hecho ningún commit.
+
+---
+
+## Cierre de la subfase 3.2 — COMPLETADA
+
+**Validación visual del supervisor (confirmada):**
+- Las paredes de los módulos expandidos están completas y no presentan agujeros accidentales.
+- El límite de cuatro módulos funciona y la interfaz impide adquirir ampliaciones adicionales.
+- Las pruebas visuales de 3.1 y 3.2 se han realizado; el supervisor ha confirmado el funcionamiento del HUD, el inventario, la barra rápida y el arrastre tras la corrección.
+
+**Prueba automatizada añadida:**
+- `tests/test_expansion_chain.gd`: expansión frontal desde la base, expansión derecha encadenada desde el módulo frontal y expansión izquierda desde la base. Comprueba cobro único, límite de cuatro módulos, caras compartidas retiradas, paredes completas donde corresponde, hueco de la oficina conservado y una estación de un módulo encadenado que planta y consume una semilla. Resultado: passed.
+- `tests/test_expansion.gd` sigue passed tras añadir `ExpansionManager.PurchaseFrom`.
+
+**Cobertura de direcciones:** con el límite de 4 módulos no es posible encadenar las cuatro direcciones en una sola configuración, porque serían necesarias cuatro compras además del base. La cobertura queda así:
+- Izquierda: desde la base y en la prueba encadenada.
+- Frente: desde la base; también en la prueba encadenada.
+- Derecha: encadenada desde un módulo frontal (la base tiene la derecha bloqueada por la oficina).
+- Atrás: desde la base, en `test_expansion.gd`.
+
+Validar las cuatro direcciones encadenadas exigiría un límite mayor. Queda como decisión para más adelante.
+
+**Pendientes no bloqueantes, trasladados al cierre del Día 3:**
+- Aviso de "Semillas insuficientes" probado en una estación real.
+- Prioridad de una estación ocupada frente a una ranura equipada.
+- Altura mínima del panel de inventario en resoluciones inferiores a unos 650 px.
+- `test_loader.gd` devuelve código 1 al cerrar por fugas del motor (problema heredado).
+
+**Estado de la subfase 3.2: COMPLETADA.**
+
+---
+
+## Subfase 3.3 — Bloque 1: rediseño del panel administrativo (COMPLETADO, validado visualmente por el supervisor)
+
+- **Validación visual del supervisor:** confirmada para el Bloque 1.
+- **Errores del editor observados durante la validación:** avisos repetidos de `scene/gui/text_edit.cpp` (gutter). Son errores internos del editor de Godot 4.7, ya documentados como heredados. No provienen del panel.
+
+- **Estructura:** marco al 88 % × 86 %, encabezado con identidad y saldo, navegación lateral de 190 px, área central dinámica y pie con el último mensaje.
+- **Secciones:** Resumen, Tienda, Almacén, Finanzas, Gestión y Expansión. Se conservan las operaciones de compra, venta y expansión, las confirmaciones, la animación de apertura y cierre, y el bloqueo del jugador.
+- **Componentes nuevos** (`scripts/management/`): `PanelTheme` (colores y estilos), `PanelWidgets` (`GlyphControl`, `NavButton`, `ItemIcon`, `StatCard`, `ProductCard`, `OccupancyBar`, `TableTile`) y `ExpansionDiagram`.
+- **Cambio en expansión:** `ExpansionManager.Modules`, de solo lectura, para que el diagrama lea los módulos. No se ha modificado la lógica de expansión.
+- **Archivos:** `scripts/management/ManagementPanel.cs` (reescrito como controlador), nuevos `PanelTheme.cs`, `PanelWidgets.cs`, `ExpansionDiagram.cs`, `tests/test_panel.gd`, y `scripts/expansion/ExpansionManager.cs`.
+- **Pruebas headless:** `test_panel.gd` passed (abre y cierra en 1152×648, 1280×720 y 1600×900; el marco queda dentro de la ventana; el saldo no cambia). `test_expansion.gd` y `test_scene.tscn` passed.
+- **Pendiente de validación visual:** aspecto de cada sección, legibilidad, scroll de Finanzas y Tienda, diagrama de expansión y funcionamiento real de compras y ventas desde el panel.
+- **Limitación:** las pruebas headless no comprueban solapamientos ni contenido cortado dentro del panel, solo que el marco queda dentro de la ventana.

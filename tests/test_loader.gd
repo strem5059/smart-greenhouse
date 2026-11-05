@@ -25,7 +25,7 @@ func _init():
 	print("Player found: ", player.name)
 
 	var fp_cam = player.get_node_or_null("Head/FirstPersonCamera")
-	var tp_cam = player.get_node_or_null("ThirdPersonPivot/ThirdPersonCamera")
+	var tp_cam = player.get_node_or_null("ThirdPersonPivot/ThirdPersonPitch/SpringArm3D/ThirdPersonCamera")
 	if fp_cam == null or tp_cam == null:
 		printerr("Cameras missing")
 		quit(1)

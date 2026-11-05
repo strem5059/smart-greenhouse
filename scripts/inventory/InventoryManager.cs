@@ -12,6 +12,8 @@ public partial class InventoryManager : Node
         { "lettuce_harvested", 0 }
     };
 
+    public event System.Action? Changed;
+
     public int GetQuantity(string itemId)
     {
         return _items.TryGetValue(itemId, out int value) ? value : 0;
@@ -31,6 +33,7 @@ public partial class InventoryManager : Node
 
         _items[itemId] += amount;
         GD.Print($"[Inventory] +{amount} {itemId} (total: {_items[itemId]})");
+        Changed?.Invoke();
     }
 
     public bool RemoveItem(string itemId, int amount)
@@ -47,6 +50,7 @@ public partial class InventoryManager : Node
 
         _items[itemId] -= amount;
         GD.Print($"[Inventory] -{amount} {itemId} (total: {_items[itemId]})");
+        Changed?.Invoke();
         return true;
     }
 
