@@ -6,8 +6,13 @@ namespace SmartGreenhouse.Robots;
 
 public interface IRobotHardware
 {
-    float ReadHumidity();
-    void SetIrrigation(bool on);
+    void SetSpeed(float metersPerSecond);
+    bool HasPlantsInModule();
+    void EnableHarvest();
+    void BeginAction(string action);
+    bool IsBusy { get; }
+    string? ActionError { get; }
+    void CancelAction();
 }
 
 public sealed class RobotException : Exception
@@ -406,6 +411,7 @@ public sealed class RobotInterpreter
 {
     private const int MaxStepsPerUpdate = 500;
     private const double LoopPause = 0.05;
+    private const double ActionPause = 0.05;
 
     private readonly IRobotHardware _hardware;
     private readonly Action<string> _console;
@@ -425,6 +431,9 @@ public sealed class RobotInterpreter
     public bool IsWaiting => IsRunning && _wait > 0;
     public string? LastError { get; private set; }
     public int ErrorLine { get; private set; }
+    public int CurrentLine { get; private set; }
+
+    private static bool IsAction(string name) => name is "recolectar" or "replantar" or "moverABaul";
 
     public bool Load(string source)
     {
@@ -517,7 +526,7 @@ public sealed class RobotInterpreter
         _wait = 0;
         _run?.Dispose();
         _run = null;
-        _hardware.SetIrrigation(false);
+        _hardware.CancelAction();
     }
 
     private IEnumerable<double> Execute(ProgramAst program)
@@ -547,6 +556,7 @@ public sealed class RobotInterpreter
     {
         foreach (Stmt statement in block)
         {
+            CurrentLine = statement.Line;
             foreach (double wait in RunStatement(statement))
             {
                 yield return wait;
@@ -584,6 +594,19 @@ public sealed class RobotInterpreter
                 }
 
                 yield return Math.Max(0, Evaluate(call.Call.Args[0])) / 1000.0;
+                break;
+            case CallStmt action when IsAction(action.Call.Name):
+                _hardware.BeginAction(action.Call.Name);
+                while (_hardware.IsBusy)
+                {
+                    yield return ActionPause;
+                }
+
+                if (_hardware.ActionError is { } error)
+                {
+                    throw new RobotException(action.Line, error);
+                }
+
                 break;
             case CallStmt call:
                 Invoke(call.Call);
@@ -642,17 +665,21 @@ public sealed class RobotInterpreter
     {
         switch (call.Name)
         {
-            case "leerHumedad":
-                RequireArguments(call, 0);
-                return _hardware.ReadHumidity();
-            case "activarRiego":
-                RequireArguments(call, 0);
-                _hardware.SetIrrigation(true);
+            case "configurarVelocidad":
+                RequireArguments(call, 1);
+                _hardware.SetSpeed((float)Evaluate(call.Args[0]));
                 return 0;
-            case "desactivarRiego":
+            case "hayPlantasEnModulo":
                 RequireArguments(call, 0);
-                _hardware.SetIrrigation(false);
+                return _hardware.HasPlantsInModule() ? 1 : 0;
+            case "activarCosecha":
+                RequireArguments(call, 0);
+                _hardware.EnableHarvest();
                 return 0;
+            case "recolectar":
+            case "replantar":
+            case "moverABaul":
+                throw new RobotException(call.Line, $"{call.Name}() solo puede usarse como instrucción");
             case "Serial.begin":
                 return 0;
             case "Serial.println":
@@ -670,7 +697,7 @@ public sealed class RobotInterpreter
     {
         if (call.Args.Count != count)
         {
-            throw new RobotException(call.Line, $"{call.Name}() no admite argumentos");
+            throw new RobotException(call.Line, $"{call.Name}() requiere {count} argumento(s)");
         }
     }
 

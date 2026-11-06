@@ -5,6 +5,7 @@ var economy
 var greenhouse
 var quickbar
 var failures := 0
+const EXAMPLE = "void loop() {\n configurarVelocidad(3.0);\n if (hayPlantasEnModulo()) {\n activarCosecha();\n recolectar();\n replantar();\n moverABaul();\n }\n delay(1000);\n}\n"
 
 
 func _init():
@@ -40,6 +41,8 @@ func _run():
 	var chest = greenhouse.get_node("Chest")
 	var robot = get_first_node_in_group("robot")
 	check(robot != null and chest != null, "robot y baúl del módulo base presentes")
+	robot.call("LoadProgram", EXAMPLE)
+	robot.call("Run")
 
 	var mature = plant("GrowingStation0")
 	mature.get("_plant").get("Data").set("Stage", 3)

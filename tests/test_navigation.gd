@@ -5,6 +5,7 @@ var economy
 var greenhouse
 var quickbar
 var failures := 0
+const EXAMPLE = "void loop() {\n configurarVelocidad(3.0);\n if (hayPlantasEnModulo()) {\n activarCosecha();\n recolectar();\n replantar();\n moverABaul();\n }\n delay(1000);\n}\n"
 
 
 func _init():
@@ -74,6 +75,8 @@ func _run():
 	# Cultivos maduros en extremos opuestos del invernadero: la ruta debe cruzar los pasillos.
 	plant_mature("GrowingStation0")
 	plant_mature("GrowingStation12")
+	robot.call("LoadProgram", EXAMPLE)
+	robot.call("Run")
 
 	var bad := 0
 	for i in range(900):
@@ -96,6 +99,8 @@ func _run():
 		if node.get_parent() == module:
 			module_robot = node
 	check(module_robot != null, "el módulo expandido tiene su robot")
+	module_robot.call("LoadProgram", EXAMPLE)
+	module_robot.call("Run")
 	var module_chest = module.get_node("Chest")
 	var module_bad := 0
 	for i in range(600):

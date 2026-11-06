@@ -9,31 +9,35 @@ namespace SmartGreenhouse.Robots;
 
 public partial class RobotController : StaticBody3D, IInteractable, IRobotHardware
 {
-	public const float IrrigationRate = 8.0f;
 	public const int Capacity = 6;
-	private const float WalkSpeed = 1.5f;
-	private const float ArrivalDistance = 0.6f;
+	public const float MinSpeed = 0.5f;
+	public const float MaxSpeed = 5.0f;
+	public const float DefaultSpeed = 1.5f;
+	private const float ArrivalDistance = 0.08f;
 
-	[Export] public string TargetStation = "GrowingStation0";
-
-	private GrowingStation? _station;
 	private RobotPanel _panel = null!;
-	private bool _irrigating;
 	private InventoryManager? _inventory;
-	private GrowingStation? _target;
-	private CropDefinition? _lastCrop;
-	private List<Vector3>? _path;
 	private Chest? _chest;
-	private float _idle;
-	private string _task = "Buscando";
 	private readonly Dictionary<string, int> _cargo = new();
 	private readonly Dictionary<string, int> _seeds = new();
+	private List<Vector3>? _path;
+	private GrowingStation? _target;
+	private CropDefinition? _lastCrop;
+	private string? _action;
+	private string? _actionError;
+	private bool _harvestEnabled;
 
 	public RobotInterpreter Interpreter { get; private set; } = null!;
 
-	public string StationName => TargetStation;
+	public float Speed { get; private set; } = DefaultSpeed;
 
-	public string TaskName => _task;
+	public bool HarvestEnabled => _harvestEnabled;
+
+	public bool IsBusy => _action != null;
+
+	public string? ActionError => _actionError;
+
+	public string TaskName => _action ?? (Interpreter.IsRunning ? "Esperando" : "Sin programa en ejecución");
 
 	public string ModuleName => GetParent() is Node3D parent && parent.Name.ToString().StartsWith("Module")
 		? "Módulo " + parent.Name.ToString().Substring(6)
@@ -47,12 +51,14 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 	public int ErrorLine => Interpreter.ErrorLine;
 
+	public int CurrentLine => Interpreter.CurrentLine;
+
 	public string LastError => Interpreter.LastError ?? string.Empty;
 
 	public string StateName => Interpreter.LastError != null
 		? "Error"
 		: Interpreter.IsRunning
-			? (Interpreter.IsWaiting ? "Esperando" : "Ejecutando")
+			? (Interpreter.IsWaiting || IsBusy ? "Ejecutando acción" : "Ejecutando")
 			: Interpreter.IsLoaded ? "Preparado" : "Inactivo";
 
 	public override void _Ready()
@@ -60,7 +66,6 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 		AddToGroup("robot");
 		BuildBody();
 		_inventory = GetNodeOrNull<InventoryManager>("/root/InventoryManager");
-		_station = GetParent().GetNodeOrNull<GrowingStation>(TargetStation);
 		Interpreter = new RobotInterpreter(this, line => _panel.AppendConsole(line));
 		_panel = new RobotPanel();
 		AddChild(_panel);
@@ -69,40 +74,54 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 	public override void _Process(double delta)
 	{
-		CropData? crop = _station?.Crop;
-		if (_irrigating && crop != null)
+		if (_action != null)
 		{
-			crop.Water += IrrigationRate * (float)delta;
-			crop.ClampValues();
+			TickAction(delta);
 		}
 
 		Interpreter.Update(delta);
-		TickAutonomy(delta);
 		_panel.Refresh();
-	}
-
-	public float ReadHumidity() => _station?.Crop?.Water ?? 0.0f;
-
-	public void SetIrrigation(bool on)
-	{
-		_irrigating = on;
 	}
 
 	public bool LoadProgram(string source) => Interpreter.Load(source);
 
-	public void Run()
-	{
-		if (_station?.Crop == null)
-		{
-			_panel.AppendConsole("Aviso: la estación no tiene cultivo; la humedad leída será 0.");
-		}
-
-		Interpreter.Start();
-	}
+	public void Run() => Interpreter.Start();
 
 	public void StopProgram() => Interpreter.Stop();
 
-	public int CargoOf(string itemId) => _cargo.TryGetValue(itemId, out int count) ? count : 0;
+	public void SetSpeed(float metersPerSecond)
+	{
+		Speed = Mathf.Clamp(metersPerSecond, MinSpeed, MaxSpeed);
+	}
+
+	public bool HasPlantsInModule() => ModuleStations().Exists(station => station.IsOccupied);
+
+	public void EnableHarvest()
+	{
+		_harvestEnabled = true;
+	}
+
+	public void BeginAction(string action)
+	{
+		_actionError = null;
+		_path = null;
+		_target = null;
+		if (action == "recolectar" && !_harvestEnabled)
+		{
+			Fail("recolectar() requiere activarCosecha() antes");
+			return;
+		}
+
+		_action = action;
+	}
+
+	public void CancelAction()
+	{
+		_action = null;
+		_actionError = null;
+		_path = null;
+		_target = null;
+	}
 
 	public string GetInteractionPrompt() => "[E] Abrir panel del robot";
 
@@ -112,126 +131,108 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 		_panel.Open(player);
 	}
 
-	private void TickAutonomy(double delta)
+	private void TickAction(double delta)
 	{
-		switch (_task)
+		switch (_action)
 		{
-			case "Buscando":
-				_target = FindMatureStation();
-				if (_target != null)
-				{
-					_task = "Desplazándose";
-				}
-				else if (_cargo.Count > 0)
-				{
-					_task = "Transportando";
-				}
-				else
-				{
-					_idle = 0;
-					_task = "Esperando";
-				}
-
+			case "recolectar":
+				TickHarvest(delta);
 				break;
-			case "Esperando":
-				_idle += (float)delta;
-				if (_idle >= 2.0f)
-				{
-					_task = "Buscando";
-				}
-
+			case "replantar":
+				TickReplant(delta);
 				break;
-			case "Desplazándose":
-				if (_target == null || !_target.IsOccupied)
-				{
-					_task = "Buscando";
-					_path = null;
-				}
-				else if (_path == null && !PlanTo(_target.Position, AisleNavigator.StationHalf))
-				{
-					Halt("Sin ruta por los pasillos hasta la estación " + _target.Name);
-				}
-				else if (FollowPath(delta))
-				{
-					_task = "Cosechando";
-					_path = null;
-				}
-
+			case "moverABaul":
+				TickDeposit(delta);
 				break;
-			case "Cosechando":
-				if (_target != null)
-				{
-					Harvest(_target);
-				}
-
-				_task = _lastCrop != null && _seeds.GetValueOrDefault(_lastCrop.SeedId) > 0 ? "Replantando" : "Buscando";
-				break;
-			case "Replantando":
-				if (_target != null)
-				{
-					Replant(_target);
-				}
-
-				_task = "Buscando";
-				break;
-			case "Transportando":
-				_chest ??= GetParent().GetNodeOrNull<Chest>("Chest");
-				if (_chest == null)
-				{
-					_task = "Buscando";
-				}
-				else if (_path == null && !PlanTo(_chest.Position, AisleNavigator.ChestHalf))
-				{
-					Halt("Sin ruta por los pasillos hasta el baúl");
-				}
-				else if (FollowPath(delta))
-				{
-					_task = "Depositando";
-					_path = null;
-				}
-
-				break;
-			case "Sin ruta":
-				_idle += (float)delta;
-				if (_idle >= 5.0f)
-				{
-					_task = "Buscando";
-				}
-
-				break;
-			case "Depositando":
-				if (_chest != null)
-				{
-					_chest.Deposit(_cargo);
-				}
-
-				_cargo.Clear();
-				_task = "Buscando";
-				break;
-		}
-
-		if (_task == "Buscando" && CargoTotal >= Capacity)
-		{
-			_task = "Transportando";
 		}
 	}
 
-	private GrowingStation? FindMatureStation()
+	private void TickHarvest(double delta)
 	{
-		if (CargoTotal >= Capacity)
+		if (_target == null)
 		{
-			return null;
-		}
-
-		foreach (Node child in GetParent().GetChildren())
-		{
-			if (child is GrowingStation station && station.Crop != null && station.Crop.IsMature)
+			_target = ModuleStations().Find(station => station.Crop != null && station.Crop.IsMature);
+			if (_target == null || CargoTotal >= Capacity)
 			{
-				return station;
+				EndAction();
+				return;
+			}
+
+			if (!PlanTo(_target.Position, AisleNavigator.StationHalf))
+			{
+				Fail("Sin ruta por los pasillos hasta la planta madura");
+				return;
 			}
 		}
 
-		return null;
+		if (FollowPath(delta))
+		{
+			Harvest(_target);
+			_target = null;
+			_path = null;
+		}
+	}
+
+	private void TickReplant(double delta)
+	{
+		if (_target == null)
+		{
+			string? seedId = FirstSeed();
+			CropDefinition? crop = CropCatalog.FromSeed(seedId);
+			_target = ModuleStations().Find(station => !station.IsOccupied);
+			if (crop == null || _target == null)
+			{
+				EndAction();
+				return;
+			}
+
+			_lastCrop = crop;
+			if (!PlanTo(_target.Position, AisleNavigator.StationHalf))
+			{
+				Fail("Sin ruta por los pasillos hasta la estación libre");
+				return;
+			}
+		}
+
+		if (FollowPath(delta))
+		{
+			if (_lastCrop != null && _target.PlantCrop(_lastCrop))
+			{
+				_seeds[_lastCrop.SeedId] -= 1;
+			}
+
+			_target = null;
+			_path = null;
+		}
+	}
+
+	private void TickDeposit(double delta)
+	{
+		if (CargoTotal == 0)
+		{
+			EndAction();
+			return;
+		}
+
+		_chest ??= GetParent().GetNodeOrNull<Chest>("Chest");
+		if (_chest == null)
+		{
+			Fail("No hay baúl en este módulo");
+			return;
+		}
+
+		if (_path == null && !PlanTo(_chest.Position, AisleNavigator.ChestHalf))
+		{
+			Fail("Sin ruta por los pasillos hasta el baúl");
+			return;
+		}
+
+		if (FollowPath(delta))
+		{
+			_chest.Deposit(_cargo);
+			_cargo.Clear();
+			EndAction();
+		}
 	}
 
 	private void Harvest(GrowingStation station)
@@ -260,14 +261,45 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 		into[itemId] = into.GetValueOrDefault(itemId) + gained;
 	}
 
-	private void Replant(GrowingStation station)
+	private string? FirstSeed()
 	{
-		if (_lastCrop == null || !station.PlantCrop(_lastCrop))
+		foreach (var (seedId, count) in _seeds)
 		{
-			return;
+			if (count > 0)
+			{
+				return seedId;
+			}
 		}
 
-		_seeds[_lastCrop.SeedId] -= 1;
+		return null;
+	}
+
+	private List<GrowingStation> ModuleStations()
+	{
+		var stations = new List<GrowingStation>();
+		foreach (Node child in GetParent().GetChildren())
+		{
+			if (child is GrowingStation station)
+			{
+				stations.Add(station);
+			}
+		}
+
+		return stations;
+	}
+
+	private void EndAction()
+	{
+		_action = null;
+		_path = null;
+		_target = null;
+	}
+
+	private void Fail(string message)
+	{
+		_actionError = message;
+		_panel.AppendConsole(message);
+		EndAction();
 	}
 
 	private bool PlanTo(Vector3 targetPosition, Vector2 footprint)
@@ -286,8 +318,8 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 		Vector3 next = _path[0];
 		Vector3 step = new Vector3(next.X - Position.X, 0, next.Z - Position.Z);
 		float distance = step.Length();
-		float move = WalkSpeed * (float)delta;
-		if (distance <= Mathf.Max(move, 0.02f))
+		float move = Speed * (float)delta;
+		if (distance <= Mathf.Max(move, ArrivalDistance))
 		{
 			Position = new Vector3(next.X, Position.Y, next.Z);
 			_path.RemoveAt(0);
@@ -296,15 +328,6 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 		Position += step / distance * move;
 		return false;
-	}
-
-	private void Halt(string message)
-	{
-		_task = "Sin ruta";
-		_idle = 0;
-		_path = null;
-		_target = null;
-		_panel.AppendConsole(message);
 	}
 
 	private static int Sum(Dictionary<string, int> values)

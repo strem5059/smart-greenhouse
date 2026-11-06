@@ -447,3 +447,23 @@ Validar las cuatro direcciones encadenadas exigiría un límite mayor. Queda com
 - **Archivos:** `AisleNavigator.cs` (nuevo), `RobotController.cs`, `tests/test_navigation.gd` (nuevo), `tests/test_robot_agent.gd` (la comprobación de replantación pasa a exigir cultivo nuevo sin madurar, porque el recorrido ahora dura más).
 - **Pruebas headless:** `test_navigation.gd` passed (0 muestras con colisión en el invernadero base ni en un módulo expandido; cosecha y depósito dentro de cada módulo). `test_robot_agent.gd` passed.
 - **Limitaciones:** la ruta no evita a otros robots ni personas; no hay animación de giro; no se ha validado visualmente el recorrido.
+
+---
+
+## Programación funcional del robot (headless validado)
+
+- **Obediencia:** el robot solo actúa mediante su programa. Sin programa en ejecución no cosecha, no replanta ni transporta. Detener el programa cancela la acción en curso.
+- **Funciones del programa:**
+  - `configurarVelocidad(v)`: velocidad real, limitada a 0,5–5,0 m/s.
+  - `hayPlantasEnModulo()`: 1 si alguna estación del módulo tiene planta.
+  - `activarCosecha()`: habilita la cosecha. Sin ella, `recolectar()` produce error.
+  - `recolectar()`: va a cada planta madura de su módulo y la cosecha con la lógica existente. No toca plantas inmaduras.
+  - `replantar()`: planta cultivos en estaciones libres con las semillas que el robot tiene.
+  - `moverABaul()`: transporta la carga al baúl de su módulo y la deposita.
+  - `delay(ms)`, `Serial.print/println`, `setup()`, `loop()`, variables, `if/else` y expresiones, como antes.
+- **Eliminado:** `leerHumedad`, `activarRiego` y `desactivarRiego`, junto con el riego automático y el comportamiento autónomo anterior.
+- **Acciones:** son bloqueantes dentro del programa (el intérprete espera a que el robot termine la acción, sin bloquear el hilo principal). Un fallo de la acción detiene el programa e indica la línea.
+- **Editor:** el programa de ejemplo usa `configurarVelocidad`, `activarCosecha`, `recolectar`, `replantar` y `moverABaul`. Muestra módulo, velocidad, carga, acción actual, línea en ejecución y consola.
+- **Archivos:** `RobotInterpreter.cs`, `RobotController.cs`, `RobotPanel.cs`, `tests/test_robot.gd`, `tests/test_robot_agent.gd`, `tests/test_navigation.gd`.
+- **Pruebas headless:** `test_robot.gd` passed (sintaxis, función desconocida, velocidad y límites, recolectar sin activarCosecha, detención), `test_robot_agent.gd` passed (ciclo completo con el programa, sin duplicación), `test_navigation.gd` passed (rutas sin colisiones con el programa), `test_panel.gd` y `test_scene.tscn` passed.
+- **Pendiente de validación visual:** edición y ejecución del programa, velocidad visible y comportamiento del robot en el juego.

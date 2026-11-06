@@ -6,7 +6,7 @@ namespace SmartGreenhouse.Robots;
 
 public partial class RobotPanel : CanvasLayer
 {
-	private const string DefaultProgram = "void setup() {\n    Serial.begin(115200);\n}\n\nvoid loop() {\n    float humedad = leerHumedad();\n\n    if (humedad < 30) {\n        activarRiego();\n        Serial.println(\"Riego activado\");\n    } else {\n        desactivarRiego();\n    }\n\n    delay(1000);\n}\n";
+	private const string DefaultProgram = "void loop() {\n    configurarVelocidad(3.0);\n\n    if (hayPlantasEnModulo()) {\n        activarCosecha();\n        recolectar();\n        replantar();\n        moverABaul();\n    }\n\n    delay(1000);\n}\n";
 
 	private RobotController _robot = null!;
 	private Control _root = null!;
@@ -131,8 +131,9 @@ public partial class RobotPanel : CanvasLayer
 		}
 
 		bool running = _robot.Interpreter.IsRunning;
-		_status.Text = $"Estado: {_robot.StateName}   ·   Tarea: {_robot.TaskName}";
-		_info.Text = $"Estación: {_robot.StationName}   ·   Humedad: {_robot.ReadHumidity():F0} %   ·   Programa en ejecución: {(running ? "sí" : "no")}";
+		_status.Text = $"Estado: {_robot.StateName}   ·   Acción: {_robot.TaskName}";
+		string line = running ? $"   ·   Línea {_robot.CurrentLine}" : string.Empty;
+		_info.Text = $"Módulo: {_robot.ModuleName}   ·   Velocidad: {_robot.Speed:F1} m/s   ·   Carga: {_robot.CargoTotal}/{RobotController.Capacity}{line}";
 		_run.Disabled = running;
 		_stop.Disabled = !running;
 	}
@@ -149,14 +150,14 @@ public partial class RobotPanel : CanvasLayer
 	private void Validate()
 	{
 		bool ok = _robot.LoadProgram(_editor.Text);
-		ShowFeedback(ok, ok ? "Programa válido." : $"Error en línea {_robot.Interpreter.ErrorLine}: {_robot.Interpreter.LastError}");
+		ShowFeedback(ok, ok ? "Programa válido." : $"Error en línea {_robot.ErrorLine}: {_robot.LastError}");
 	}
 
 	private void RunProgram()
 	{
 		if (!_robot.LoadProgram(_editor.Text))
 		{
-			ShowFeedback(false, $"Error en línea {_robot.Interpreter.ErrorLine}: {_robot.Interpreter.LastError}");
+			ShowFeedback(false, $"Error en línea {_robot.ErrorLine}: {_robot.LastError}");
 			return;
 		}
 
