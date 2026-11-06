@@ -492,4 +492,103 @@ Estas decisiones requieren aprobación antes de implementar la etapa correspondi
 
 ---
 
+## 17. Estado de implementación
+
+| Etapa | Estado | Detalle |
+|---|---|---|
+| **1. Configuración y control** | Implementada (pendiente de validación visual) | Pausar y reanudar robot; detener programa; velocidad y capacidad configurables desde el panel del robot; estado de actividad (Preparado, Ejecutando, Ejecutando acción, Pausado, Error, Inactivo); tarea y línea en curso |
+| **2. Recolector y almacén central** | Implementada (pendiente de validación visual) | Compra desde Gestión por $12,000; capacidad 30; velocidad 3 m/s; almacén central en la oficina; todos los módulos |
+| **3. Robot administrativo** | Implementada (pendiente de validación visual) | Presente en la oficina desde el inicio; revisa cada 3 s; compra insumos, vende excedentes del almacén central y respeta una reserva de $5 000 |
+| 4. Economía autónoma | Pendiente | — |
+| 5. Planificación agrícola | Pendiente | — |
+| 6. Modo AFK | Pendiente | — |
+| 7. Ampliaciones | Pendiente | — |
+
+**Etapa 1: detalle de lo implementado**
+- `RobotController.TogglePause()`: pausa y reanuda sin perder la acción en curso. Un robot pausado no avanza, no cosecha, no replanta y no transporta.
+- `RobotController.StopProgram()`: detiene el programa, cancela la acción y quita la pausa.
+- `RobotController.SetSpeed()`: velocidad limitada a 0,5–5,0 m/s. Puede cambiarse desde el panel o desde `configurarVelocidad()`; prevalece el último cambio.
+- `RobotController.SetCapacity()`: capacidad de carga limitada a 1–12 unidades (valor inicial 6). Afecta a la cosecha desde el siguiente ciclo.
+- `ManagementPanel`: la fila de cada robot muestra la carga según la capacidad configurada.
+
+**Pendiente de Etapa 1**
+- Validación visual del jugador.
+- Detener y reanudar robots desde `ManagementPanel`. Hoy se controla desde el panel del propio robot.
+- Persistencia de parámetros entre sesiones (no existe persistencia de partida).
+
+**Etapa 2: detalle de lo implementado**
+- `CollectorFleet`: gestiona la compra (`RobotPrice` = 12 000 $, descontados con `EconomyManager.TrySpend`) y crea el almacén central. Se añade al invernadero al cargar `ExpansionManager`.
+- `CollectorRobot`: ciclo de recogida. Visita los baúles con existencias de todos los módulos (el más cercano primero), carga hasta 30 unidades, regresa al almacén al alcanzar la capacidad o cuando no quedan existencias, deposita y repite mientras esté activo.
+- Transferencias: `Chest.Withdraw` retira solo lo que existe, sin tocar el inventario del jugador. `CentralWarehouse.Deposit` recibe la carga. Las unidades siempre suman baúles + carga + almacén; la prueba lo comprueba en cada muestra.
+- `GreenhouseRouter`: navegación global con A* sobre el área de todos los módulos. Entra en la oficina por la puerta (`DoorPoint`) y deposita en `WarehouseSpot`.
+- Control desde Gestión: cada recolector muestra estado, ubicación, carga y capacidad, con botones **Pausar/Reanudar** (conserva carga y tarea) y **Detener/Iniciar** (cancela el viaje y conserva la carga). La sección muestra también el contenido del almacén central.
+- Preparación para el robot administrativo: `CentralWarehouse.Contents` y `Deposit` son la única fuente de existencias centrales. La venta y la compra no se han implementado.
+
+**Etapa 2: pendiente de validación y limitaciones conocidas**
+- Validación visual del jugador: que la puerta de la oficina coincida con una abertura de la pared este del invernadero. El recorrido usa el corredor de la puerta, pero el cristal no es un obstáculo para la ruta.
+- El recolector no esquiva a otros robots (igual que el robot agrícola).
+- El almacén central no tiene capacidad máxima.
+- La velocidad (3 m/s) no se ajusta desde la interfaz todavía; `CollectorRobot.Speed` está preparado.
+- No hay persistencia.
+
+**Etapa 3: detalle de lo implementado**
+- `AdministrationRobot` (oficina, creado por `CollectorFleet`): cada 3 s revisa los insumos (fertilizante y semillas de los cinco cultivos).
+- Regla de reposición: si `existencias < mínimo`, compra `objetivo − existencias`, con objetivo = mínimo × multiplicador. Ejemplo: 9 fertilizantes → objetivo 30 → compra 21.
+- Valores por defecto: mínimo 10 por insumo, multiplicador 3, reserva $5 000. Se pueden cambiar desde la página **Administración** del panel (mínimos por insumo, multiplicador y reserva, dentro de límites).
+- Dinero: el robot nunca gasta por debajo de la reserva. Si falta dinero, vende de su almacén central la cantidad mínima de cosechas necesaria (`CentralWarehouse.Take` → `EconomyManager.SellFromWarehouse`). Si ni siquiera con todas las cosechas vendibles alcanza, no vende nada, no compra y lo notifica una sola vez.
+- Las compras usan `EconomyManager.BuyItem` y entran en el inventario del jugador, que es donde la producción consume los insumos. Las semillas nunca llegan al almacén central, así que no se venden.
+- Anti-duplicación: cada revisión compra y actualiza las existencias de forma síncrona. Una segunda revisión sin cambios no compra nada.
+- Control: Pausar/Reanudar y Detener/Iniciar desde el panel. Historial de las últimas 8 operaciones y totales de compras y ventas del robot.
+
+**Etapa 3: decisiones de interpretación y pendientes**
+- El robot está disponible desde el inicio. Su precio de compra desde "Comprar robots" queda pendiente de decisión.
+- "Reserva de productos" no existe todavía. Como las semillas no llegan al almacén y las cosechas solo se venden cuando faltan fondos, no hay reserva de producción.
+- Compra todo-o-nada por revisión: no compra parcialmente.
+- Pendiente de validación visual: la página Administración y el comportamiento del robot en partida.
+
+**Etapa 4: robots configurables y automatización económica (implementada, pendiente de validación visual)**
+- Compra: el recolector cuesta $12 000 y el administrativo $20 000, ambos desde Gestión. Ninguno existe al iniciar. Una compra fallida no crea instancias ni cobra. Hay una sola instancia administrativa; los recolectores pueden ser varios.
+- Programas: ambos robots usan `RobotInterpreter` con su propio `IRobotHardware`. Las funciones se despachan con `TryCall`, así que cada robot solo admite las suyas.
+  - Recolector: `configurarVelocidad`, `configurarCapacidad`, `buscarBaules`, `cargaActual`, y las acciones `recogerCultivos`, `regresarAlmacen` y `depositar`. `depositar` falla fuera de la oficina.
+  - Administrativo: `configurarFrecuencia`, `comprobarExistencias`, `comprarInsumos`, `venderCosechas`, `reservarDinero`, `reservarCosecha`, `activarVentas`, y la acción `esperarRevision`.
+  - Robot agrícola: `configurarVelocidad`, `hayPlantasEnModulo`, `activarCosecha` y sus acciones, sin cambios funcionales.
+- Panel de programa: Validar, Ejecutar, Pausar/Reanudar y Detener. Los ajustes numéricos se muestran junto al editor. El código y la última configuración se guardan en la instancia durante la partida.
+- Ventas automáticas: `venderCosechas` vende solo productos del almacén central, por encima de la reserva de cada cultivo, en orden de prioridad, y únicamente cuando el total vendible alcanza la cantidad mínima acumulada (5 por defecto). Las semillas nunca llegan al almacén.
+- Compras: `comprarInsumos` compra la diferencia hasta el objetivo, respeta la reserva monetaria y, si falta dinero, vende excedentes solo si las ventas automáticas están activadas. Si no alcanza, no compra ni vende, y lo notifica una vez.
+- Panel Administración: estado, dinero, reserva, almacén, compras pendientes, ventas, ingresos, historial, configuración de mínimos, multiplicador, reserva monetaria, ventas automáticas, reserva y prioridad por cultivo, cantidad mínima para vender, y el botón del programa.
+- Scroll: Almacén, Gestión y Administración se envuelven en un `ScrollContainer`. Se quitaron los scrolls internos que anidaban (Gestión, Administración), para que la página sea la única que se desplaza. Sin validación visual todavía.
+
+**Etapa 4: decisiones y pendientes**
+- La configuración del panel es el valor inicial. Mientras el programa se ejecuta, sus instrucciones (por ejemplo `configurarVelocidad`) prevalecen.
+- Los programas y la configuración se guardan solo en la instancia de la sesión. No hay persistencia en disco, que el proyecto aún no tiene.
+- El robot agrícola base sigue existiendo al iniciar: pertenece a la granja original y no se incluyó en la lista de robots de pago.
+- Pendiente de validación visual: el scroll de las tres páginas, la compra de cada robot, la edición y ejecución de programas, y las ventas automáticas en partida.
+- Pendiente: decidir si la reserva de productos debe ser también configurable por el jugador fuera del panel, y si los programas deben poder guardarse en disco.
+
+**Corrección de interacción (implementada, pendiente de validación visual)**
+- Los editores de programa se abren solo con `E` junto a cada robot (agrícola, recolector y administrativo), usando el mismo sistema de interacción. Gestión ya no abre editores.
+- Al abrir un editor se bloquea el control del jugador (`SetInputLocked`), se libera el cursor y se da foco al código. Cerrar con el botón o `Esc` devuelve el control y captura de nuevo el ratón.
+- Causa corregida: los editores abiertos desde Gestión no recibían al jugador, así que el ratón quedaba capturado y el jugador seguía moviéndose.
+- Cada robot conserva su programa en la instancia durante la sesión.
+
+**Correcciones de agricultura, comunicación y editor (implementadas, pendiente de validación visual)**
+- Necesidades por cultivo en `CropDefinition` (`NeedsWater`, `NeedsFertilizer`): lechuga ninguna; zanahoria y espinaca solo agua; tomate y pepino agua y fertilizante. Es una asunción a confirmar; no cambia precios ni crecimiento.
+- Funciones por planta del robot agrícola: `numeroPlantas`, `necesitaRiego(i)`, `regar(i)`, `necesitaFertilizante(i)`, `fertilizar(i)`, `hayFertilizante`. El agua es gratuita. Fertilizar consume 1 unidad local y no actúa sin existencias.
+- Intérprete: sentencia `while (cond) { ... }` (con pausa entre iteraciones para no bloquear el hilo), constante `Fertilizante`, y `Peticion(Fertilizante)` / `esperarRecurso(Fertilizante)`.
+- Solicitudes: `CollectorFleet` guarda una solicitud por robot y recurso, con cantidad = plantas que lo necesitan − existencias locales. Se fusionan y no se duplican. `atenderPeticiones()` del administrativo compra solo lo que falta respetando la reserva, descuenta del inventario y entrega al robot solicitante. Sin dinero, la solicitud queda pendiente. Detener el robot la cancela.
+- Editor: `E` se marca como gestionada al abrir y el foco del editor se da de forma diferida, así que la tecla no se escribe.
+
+**Pendientes:** validación visual del editor con `E` y del recorrido de las plantas; verificación en módulos expandidos (no probada aún); confirmar las necesidades por cultivo.
+
+**Menú principal y persistencia local (implementados, pendiente de validación visual)**
+- Menú principal con Nueva partida, Continuar, Cargar partida, Opciones y Salir, sobre el invernadero real como fondo.
+- Partidas independientes en `user://saves/`, con nombre, fecha y dinero. Guardado manual (menú de pausa), automático cada 5 minutos y al cerrar. Confirmación al cargar, eliminar, volver al menú o salir.
+- Saldo inicial de $100 MXN (`EconomyManager.StartingBalance = 100`).
+- Restauración completa de dinero, historial, inventario, cultivos, expansiones, baúles, almacén, robots, programas, configuraciones y estado de pausa, sin cobrar ni duplicar.
+- Pendiente: validación visual del menú y del menú de pausa, autoguardado real a los 5 minutos y el flujo completo de Nueva partida → jugar → salir → continuar.
+- No se guardan tareas en curso ni solicitudes entre robots: se rehacen desde el estado guardado.
+- Release Beta: menú corregido (sin HUD ni jugador, cursor visible). Exportación Windows x64 bloqueada por la falta de las plantillas de exportación de Godot Mono 4.7.2; preset y README preparados.
+
+**Siguiente etapa:** Etapa 5, planificación agrícola (análisis de rentabilidad y recomendaciones de cultivo). Depende de `CropCatalog`, `EconomyManager` y del historial de ventas.
+
 *Documento vivo. Se actualizará al cerrar cada etapa.*

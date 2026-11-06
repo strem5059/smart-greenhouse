@@ -182,7 +182,7 @@ public partial class GameHud : CanvasLayer
 	private Control BuildControlsHint()
 	{
 		var card = Card();
-		var label = new Label { Text = "V  Cambiar cámara\nEsc  Liberar ratón" };
+		var label = new Label { Text = "V  Cambiar cámara\nEsc  Liberar ratón\nTab Inventario" };
 		StyleLabel(label, 14, MutedColor);
 		card.AddChild(label);
 		Place(card, Control.LayoutPreset.TopRight, -240, 20, -20, 74);

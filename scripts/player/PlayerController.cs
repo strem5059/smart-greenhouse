@@ -140,11 +140,13 @@ public partial class PlayerController : CharacterBody3D
 
         if (@event.IsActionPressed("ui_cancel"))
         {
-            SetMouseCaptured(Input.MouseMode != Input.MouseModeEnum.Captured);
+            (GetTree().GetFirstNodeInGroup("pause_menu") as SmartGreenhouse.Menu.PauseMenu)?.Open();
+            GetViewport().SetInputAsHandled();
         }
 
         if (@event.IsActionPressed("interact") && _currentInteractable != null)
         {
+            GetViewport().SetInputAsHandled();
             _currentInteractable.Interact();
         }
     }
@@ -290,6 +292,8 @@ public partial class PlayerController : CharacterBody3D
         _hud.SetInventoryMode(false);
         SetMouseCaptured(true);
     }
+
+    public bool IsInputLocked => _inputLocked;
 
     public void SetInputLocked(bool locked)
     {

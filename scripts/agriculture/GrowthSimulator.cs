@@ -19,6 +19,11 @@ public partial class GrowthSimulator : Node
 	private double _elapsed = 0.0;
 	private readonly List<PlantController> _plants = new();
 
+	public void ClearPlants()
+	{
+		_plants.Clear();
+	}
+
 	public void RegisterPlant(PlantController plant)
 	{
 		if (!_plants.Contains(plant))

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using SmartGreenhouse.Management;
 using SmartGreenhouse.Player;
@@ -6,9 +7,7 @@ namespace SmartGreenhouse.Robots;
 
 public partial class RobotPanel : CanvasLayer
 {
-	private const string DefaultProgram = "void loop() {\n    configurarVelocidad(3.0);\n\n    if (hayPlantasEnModulo()) {\n        activarCosecha();\n        recolectar();\n        replantar();\n        moverABaul();\n    }\n\n    delay(1000);\n}\n";
-
-	private RobotController _robot = null!;
+	private IProgrammableRobot _robot = null!;
 	private Control _root = null!;
 	private Label _status = null!;
 	private Label _info = null!;
@@ -16,10 +15,12 @@ public partial class RobotPanel : CanvasLayer
 	private TextEdit _console = null!;
 	private Label _feedback = null!;
 	private Button _run = null!;
+	private Button _pause = null!;
 	private Button _stop = null!;
 	private PlayerController? _player;
+	private readonly List<(RobotSetting Setting, SpinBox Input)> _settings = new();
 
-	public void Initialize(RobotController robot)
+	public void Initialize(IProgrammableRobot robot)
 	{
 		_robot = robot;
 		Layer = 18;
@@ -47,7 +48,7 @@ public partial class RobotPanel : CanvasLayer
 		var header = new HBoxContainer();
 		header.AddThemeConstantOverride("separation", 16);
 		column.AddChild(header);
-		header.AddChild(PanelTheme.MakeLabel("ROBOT AGRÍCOLA · AGRO-01", 18, PanelTheme.Accent));
+		header.AddChild(PanelTheme.MakeLabel(_robot.ProgramTitle, 18, PanelTheme.Accent));
 		_status = PanelTheme.MakeLabel(string.Empty, 14, PanelTheme.Text);
 		_status.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
 		header.AddChild(_status);
@@ -59,6 +60,18 @@ public partial class RobotPanel : CanvasLayer
 		_info = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Muted);
 		column.AddChild(_info);
 
+		var settingsRow = new HBoxContainer();
+		settingsRow.AddThemeConstantOverride("separation", 10);
+		column.AddChild(settingsRow);
+		foreach (RobotSetting setting in _robot.Settings)
+		{
+			settingsRow.AddChild(PanelTheme.MakeLabel(setting.Label, 13, PanelTheme.Muted));
+			var input = new SpinBox { MinValue = setting.Min, MaxValue = setting.Max, Step = setting.Step, Value = setting.Read(), Suffix = setting.Suffix };
+			input.ValueChanged += value => setting.Write(value);
+			settingsRow.AddChild(input);
+			_settings.Add((setting, input));
+		}
+
 		var body = new HBoxContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
 		body.AddThemeConstantOverride("separation", 12);
 		column.AddChild(body);
@@ -68,7 +81,7 @@ public partial class RobotPanel : CanvasLayer
 		left.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
 		body.AddChild(left);
 		left.AddChild(PanelTheme.MakeLabel("Programa (sintaxis Arduino simplificada)", 13, PanelTheme.Muted));
-		_editor = new TextEdit { Text = DefaultProgram, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+		_editor = new TextEdit { Text = _robot.SavedProgram ?? _robot.DefaultProgram, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
 		left.AddChild(_editor);
 
 		var right = PanelTheme.Column(4);
@@ -90,6 +103,10 @@ public partial class RobotPanel : CanvasLayer
 		PanelTheme.StyleButton(_run, true);
 		_run.Pressed += RunProgram;
 		footer.AddChild(_run);
+		_pause = new Button { Text = "Pausar" };
+		PanelTheme.StyleButton(_pause, false);
+		_pause.Pressed += () => { _robot.TogglePause(); Refresh(); };
+		footer.AddChild(_pause);
 		_stop = new Button { Text = "Detener" };
 		PanelTheme.StyleButton(_stop, false);
 		_stop.Pressed += _robot.StopProgram;
@@ -101,10 +118,16 @@ public partial class RobotPanel : CanvasLayer
 
 	public void Open(PlayerController? player)
 	{
-		_player = player;
+		_player = player ?? GetTree().GetFirstNodeInGroup("player") as PlayerController;
 		_root.Visible = true;
 		_player?.SetInputLocked(true);
+		foreach (var (setting, input) in _settings)
+		{
+			input.SetValueNoSignal(setting.Read());
+		}
+
 		Refresh();
+		_editor.CallDeferred(Control.MethodName.GrabFocus);
 	}
 
 	public void Close()
@@ -132,10 +155,12 @@ public partial class RobotPanel : CanvasLayer
 
 		bool running = _robot.Interpreter.IsRunning;
 		_status.Text = $"Estado: {_robot.StateName}   ·   Acción: {_robot.TaskName}";
-		string line = running ? $"   ·   Línea {_robot.CurrentLine}" : string.Empty;
-		_info.Text = $"Módulo: {_robot.ModuleName}   ·   Velocidad: {_robot.Speed:F1} m/s   ·   Carga: {_robot.CargoTotal}/{RobotController.Capacity}{line}";
+		string line = running ? $"   ·   Línea {_robot.Interpreter.CurrentLine}" : string.Empty;
+		_info.Text = _robot.InfoText + line;
 		_run.Disabled = running;
 		_stop.Disabled = !running;
+		_pause.Disabled = !running;
+		_pause.Text = _robot.IsPaused ? "Reanudar" : "Pausar";
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -150,14 +175,14 @@ public partial class RobotPanel : CanvasLayer
 	private void Validate()
 	{
 		bool ok = _robot.LoadProgram(_editor.Text);
-		ShowFeedback(ok, ok ? "Programa válido." : $"Error en línea {_robot.ErrorLine}: {_robot.LastError}");
+		ShowFeedback(ok, ok ? "Programa válido." : $"Error en línea {_robot.Interpreter.ErrorLine}: {_robot.Interpreter.LastError}");
 	}
 
 	private void RunProgram()
 	{
 		if (!_robot.LoadProgram(_editor.Text))
 		{
-			ShowFeedback(false, $"Error en línea {_robot.ErrorLine}: {_robot.LastError}");
+			ShowFeedback(false, $"Error en línea {_robot.Interpreter.ErrorLine}: {_robot.Interpreter.LastError}");
 			return;
 		}
 

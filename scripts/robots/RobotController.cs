@@ -7,9 +7,11 @@ using SmartGreenhouse.Player;
 
 namespace SmartGreenhouse.Robots;
 
-public partial class RobotController : StaticBody3D, IInteractable, IRobotHardware
+public partial class RobotController : StaticBody3D, IInteractable, IRobotHardware, IProgrammableRobot
 {
-	public const int Capacity = 6;
+	public const int DefaultCapacity = 6;
+	public const int MinCapacity = 1;
+	public const int MaxCapacity = 12;
 	public const float MinSpeed = 0.5f;
 	public const float MaxSpeed = 5.0f;
 	public const float DefaultSpeed = 1.5f;
@@ -30,6 +32,10 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 	public RobotInterpreter Interpreter { get; private set; } = null!;
 
 	public float Speed { get; private set; } = DefaultSpeed;
+
+	public int CapacityLimit { get; private set; } = DefaultCapacity;
+
+	public bool IsPaused { get; private set; }
 
 	public bool HarvestEnabled => _harvestEnabled;
 
@@ -57,9 +63,11 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 	public string StateName => Interpreter.LastError != null
 		? "Error"
-		: Interpreter.IsRunning
-			? (Interpreter.IsWaiting || IsBusy ? "Ejecutando acción" : "Ejecutando")
-			: Interpreter.IsLoaded ? "Preparado" : "Inactivo";
+		: IsPaused
+			? "Pausado"
+			: Interpreter.IsRunning
+				? (Interpreter.IsWaiting || IsBusy ? "Ejecutando acción" : "Ejecutando")
+				: Interpreter.IsLoaded ? "Preparado" : "Inactivo";
 
 	public override void _Ready()
 	{
@@ -74,24 +82,197 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 	public override void _Process(double delta)
 	{
-		if (_action != null)
+		if (!IsPaused)
 		{
-			TickAction(delta);
+			if (_action != null)
+			{
+				TickAction(delta);
+			}
+
+			Interpreter.Update(delta);
 		}
 
-		Interpreter.Update(delta);
 		_panel.Refresh();
 	}
 
-	public bool LoadProgram(string source) => Interpreter.Load(source);
+	public string? SavedProgram { get; private set; }
 
-	public void Run() => Interpreter.Start();
+	public string ProgramTitle => "ROBOT AGRÍCOLA · AGRO-01";
 
-	public void StopProgram() => Interpreter.Stop();
+	public string DefaultProgram => "void loop() {\n    configurarVelocidad(3.0);\n\n    if (hayPlantasEnModulo()) {\n        int i = 0;\n        while (i < numeroPlantas()) {\n            if (necesitaRiego(i)) {\n                regar(i);\n            }\n\n            if (necesitaFertilizante(i)) {\n                if (hayFertilizante() == 0) {\n                    Peticion(Fertilizante);\n                    esperarRecurso(Fertilizante);\n                }\n\n                fertilizar(i);\n            }\n\n            i = i + 1;\n        }\n\n        activarCosecha();\n        recolectar();\n        replantar();\n        moverABaul();\n    }\n\n    delay(1000);\n}\n";
+
+	public string InfoText => $"Módulo: {ModuleName}   ·   Velocidad: {Speed:F1} m/s   ·   Carga: {CargoTotal}/{CapacityLimit}";
+
+	public IReadOnlyList<RobotSetting> Settings => new[]
+	{
+		new RobotSetting("Velocidad", MinSpeed, MaxSpeed, 0.5, () => Speed, value => SetSpeed((float)value), " m/s"),
+		new RobotSetting("Carga máx.", MinCapacity, MaxCapacity, 1, () => CapacityLimit, value => SetCapacity((int)value))
+	};
+
+	public bool LoadProgram(string source)
+	{
+		bool loaded = Interpreter.Load(source);
+		if (loaded)
+		{
+			SavedProgram = source;
+		}
+
+		return loaded;
+	}
+
+	public bool IsAction(string name) => name is "recolectar" or "replantar" or "moverABaul" or "esperarRecurso";
+
+	public int FertilizerStock { get; private set; }
+
+	public IReadOnlyDictionary<string, int> CargoItems => _cargo;
+
+	public IReadOnlyDictionary<string, int> SeedItems => _seeds;
+
+	public void ApplySavedState(Vector3 position, float speed, int capacity, IReadOnlyDictionary<string, int> cargo, IReadOnlyDictionary<string, int> seeds, int fertilizer, bool harvestEnabled, string? program, bool running, bool paused)
+	{
+		Position = position;
+		SetSpeed(speed);
+		SetCapacity(capacity);
+		_cargo.Clear();
+		foreach (var (itemId, count) in cargo)
+		{
+			_cargo[itemId] = count;
+		}
+
+		_seeds.Clear();
+		foreach (var (itemId, count) in seeds)
+		{
+			_seeds[itemId] = count;
+		}
+
+		FertilizerStock = fertilizer;
+		if (harvestEnabled)
+		{
+			EnableHarvest();
+		}
+
+		if (!string.IsNullOrEmpty(program))
+		{
+			LoadProgram(program);
+		}
+
+		if (running)
+		{
+			Run();
+			if (paused)
+			{
+				TogglePause();
+			}
+		}
+	}
+
+	public void ReceiveSupply(string itemId, int quantity)
+	{
+		if (itemId == "fertilizer" && quantity > 0)
+		{
+			FertilizerStock += quantity;
+		}
+	}
+
+	private CollectorFleet? Fleet => GetTree().GetFirstNodeInGroup("collector_fleet") as CollectorFleet;
+
+	private List<GrowingStation> PlantsInModule() => ModuleStations().FindAll(station => station.IsOccupied);
+
+	private GrowingStation? PlantAt(IReadOnlyList<double> args)
+	{
+		List<GrowingStation> plants = PlantsInModule();
+		int index = (int)args[0];
+		return index >= 0 && index < plants.Count ? plants[index] : null;
+	}
+
+	private void RequestFertilizer()
+	{
+		int needed = PlantsInModule().FindAll(station => station.NeedsFertilizerNow).Count - FertilizerStock;
+		if (needed > 0)
+		{
+			Fleet?.RequestSupply(this, "fertilizer", needed);
+		}
+	}
+
+	public bool TryCall(string name, IReadOnlyList<double> args, out double result)
+	{
+		result = 0;
+		switch (name)
+		{
+			case "hayPlantasEnModulo" when args.Count == 0:
+				result = HasPlantsInModule() ? 1 : 0;
+				return true;
+			case "configurarVelocidad" when args.Count == 1:
+				SetSpeed((float)args[0]);
+				return true;
+			case "numeroPlantas" when args.Count == 0:
+				result = PlantsInModule().Count;
+				return true;
+			case "necesitaRiego" when args.Count == 1:
+				result = PlantAt(args)?.NeedsWaterNow == true ? 1 : 0;
+				return true;
+			case "regar" when args.Count == 1:
+				if (PlantAt(args) is { NeedsWaterNow: true } watered)
+				{
+					watered.ReceiveWater();
+				}
+
+				return true;
+			case "necesitaFertilizante" when args.Count == 1:
+				result = PlantAt(args)?.NeedsFertilizerNow == true ? 1 : 0;
+				return true;
+			case "fertilizar" when args.Count == 1:
+				if (FertilizerStock > 0 && PlantAt(args) is { NeedsFertilizerNow: true } fertilized)
+				{
+					FertilizerStock--;
+					fertilized.ReceiveNutrients();
+				}
+
+				return true;
+			case "hayFertilizante" when args.Count == 0:
+				result = FertilizerStock > 0 ? 1 : 0;
+				return true;
+			case "Peticion" when args.Count == 1 && args[0] == 1:
+				RequestFertilizer();
+				return true;
+			case "activarCosecha" when args.Count == 0:
+				EnableHarvest();
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	public void Run()
+	{
+		IsPaused = false;
+		Interpreter.Start();
+	}
+
+	public void StopProgram()
+	{
+		IsPaused = false;
+		Interpreter.Stop();
+	}
+
+	public void TogglePause()
+	{
+		if (!Interpreter.IsRunning)
+		{
+			return;
+		}
+
+		IsPaused = !IsPaused;
+	}
 
 	public void SetSpeed(float metersPerSecond)
 	{
 		Speed = Mathf.Clamp(metersPerSecond, MinSpeed, MaxSpeed);
+	}
+
+	public void SetCapacity(int capacity)
+	{
+		CapacityLimit = Mathf.Clamp(capacity, MinCapacity, MaxCapacity);
 	}
 
 	public bool HasPlantsInModule() => ModuleStations().Exists(station => station.IsOccupied);
@@ -117,6 +298,7 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 
 	public void CancelAction()
 	{
+		Fleet?.CancelRequests(this);
 		_action = null;
 		_actionError = null;
 		_path = null;
@@ -144,6 +326,13 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 			case "moverABaul":
 				TickDeposit(delta);
 				break;
+			case "esperarRecurso":
+				if (FertilizerStock > 0)
+				{
+					EndAction();
+				}
+
+				break;
 		}
 	}
 
@@ -152,7 +341,7 @@ public partial class RobotController : StaticBody3D, IInteractable, IRobotHardwa
 		if (_target == null)
 		{
 			_target = ModuleStations().Find(station => station.Crop != null && station.Crop.IsMature);
-			if (_target == null || CargoTotal >= Capacity)
+			if (_target == null || CargoTotal >= CapacityLimit)
 			{
 				EndAction();
 				return;

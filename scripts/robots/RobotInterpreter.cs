@@ -6,9 +6,8 @@ namespace SmartGreenhouse.Robots;
 
 public interface IRobotHardware
 {
-    void SetSpeed(float metersPerSecond);
-    bool HasPlantsInModule();
-    void EnableHarvest();
+    bool IsAction(string name);
+    bool TryCall(string name, IReadOnlyList<double> args, out double result);
     void BeginAction(string action);
     bool IsBusy { get; }
     string? ActionError { get; }
@@ -135,6 +134,7 @@ internal sealed record DeclStmt(int Line, string Name, Expr? Value) : Stmt(Line)
 internal sealed record AssignStmt(int Line, string Name, Expr Value) : Stmt(Line);
 internal sealed record CallStmt(int Line, CallExpr Call) : Stmt(Line);
 internal sealed record IfStmt(int Line, Expr Condition, List<Stmt> Then, List<Stmt> Else) : Stmt(Line);
+internal sealed record WhileStmt(int Line, Expr Condition, List<Stmt> Body) : Stmt(Line);
 
 internal sealed record ProgramAst(List<Stmt> Globals, List<Stmt> Setup, List<Stmt> Loop);
 
@@ -253,6 +253,15 @@ internal sealed class Parser
 
             Expect(";");
             return new DeclStmt(line, name, value);
+        }
+
+        if (IsWord("while"))
+        {
+            _pos++;
+            Expect("(");
+            Expr condition = ParseExpr();
+            Expect(")");
+            return new WhileStmt(line, condition, ParseBody());
         }
 
         if (IsWord("if"))
@@ -433,7 +442,7 @@ public sealed class RobotInterpreter
     public int ErrorLine { get; private set; }
     public int CurrentLine { get; private set; }
 
-    private static bool IsAction(string name) => name is "recolectar" or "replantar" or "moverABaul";
+    private bool IsAction(string name) => _hardware.IsAction(name);
 
     public bool Load(string source)
     {
@@ -587,6 +596,18 @@ public sealed class RobotInterpreter
                 }
 
                 break;
+            case WhileStmt loop:
+                while (Evaluate(loop.Condition) != 0)
+                {
+                    foreach (double wait in RunBlock(loop.Body))
+                    {
+                        yield return wait;
+                    }
+
+                    yield return LoopPause;
+                }
+
+                break;
             case CallStmt call when call.Call.Name == "delay":
                 if (call.Call.Args.Count != 1)
                 {
@@ -620,6 +641,8 @@ public sealed class RobotInterpreter
         {
             case NumExpr number:
                 return number.Value;
+            case VarExpr variable when variable.Name == "Fertilizante":
+                return 1;
             case VarExpr variable:
                 if (!_vars.TryGetValue(variable.Name, out double value))
                 {
@@ -665,17 +688,6 @@ public sealed class RobotInterpreter
     {
         switch (call.Name)
         {
-            case "configurarVelocidad":
-                RequireArguments(call, 1);
-                _hardware.SetSpeed((float)Evaluate(call.Args[0]));
-                return 0;
-            case "hayPlantasEnModulo":
-                RequireArguments(call, 0);
-                return _hardware.HasPlantsInModule() ? 1 : 0;
-            case "activarCosecha":
-                RequireArguments(call, 0);
-                _hardware.EnableHarvest();
-                return 0;
             case "recolectar":
             case "replantar":
             case "moverABaul":
@@ -689,7 +701,20 @@ public sealed class RobotInterpreter
             case "delay":
                 throw new RobotException(call.Line, "delay() solo puede usarse como instrucción independiente");
             default:
-                throw new RobotException(call.Line, $"Función no admitida: {call.Name}()");
+            {
+                var values = new List<double>();
+                foreach (var arg in call.Args)
+                {
+                    values.Add(Evaluate(arg));
+                }
+
+                if (_hardware.TryCall(call.Name, values, out double result))
+                {
+                    return result;
+                }
+
+                throw new RobotException(call.Line, $"Función no admitida en este robot: {call.Name}()");
+            }
         }
     }
 

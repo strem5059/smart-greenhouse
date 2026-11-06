@@ -76,11 +76,21 @@ public partial class Chest : StaticBody3D, IInteractable
 		_panel.Open(player);
 	}
 
-	private int TakeAmount(string itemId, int amount)
+	public void Store(string itemId, int amount)
+	{
+		if (amount <= 0)
+		{
+			return;
+		}
+
+		_items[itemId] = Count(itemId) + amount;
+	}
+
+	public int Withdraw(string itemId, int amount)
 	{
 		int available = Count(itemId);
 		int taken = System.Math.Min(available, amount);
-		if (taken <= 0 || _inventory == null)
+		if (taken <= 0)
 		{
 			return 0;
 		}
@@ -94,7 +104,22 @@ public partial class Chest : StaticBody3D, IInteractable
 			_items[itemId] = available - taken;
 		}
 
-		_inventory.AddItem(itemId, taken);
+		return taken;
+	}
+
+	private int TakeAmount(string itemId, int amount)
+	{
+		if (_inventory == null)
+		{
+			return 0;
+		}
+
+		int taken = Withdraw(itemId, amount);
+		if (taken > 0)
+		{
+			_inventory.AddItem(itemId, taken);
+		}
+
 		return taken;
 	}
 }

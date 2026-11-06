@@ -23,6 +23,10 @@ public sealed class GreenhouseModule
     }
 
     public int Id { get; }
+
+    public int SourceId { get; set; }
+
+    public ExpansionDirection Direction { get; set; }
     public Vector2I Cell { get; }
     public Node3D Root { get; }
     public string Name => Id == 0 ? "Base" : $"Módulo {Id}";
@@ -74,6 +78,7 @@ public partial class ExpansionManager : Node
     {
         AddToGroup("expansion_manager");
         _baseRoot = GetParent<Node3D>();
+        _baseRoot.CallDeferred(Node.MethodName.AddChild, new CollectorFleet());
         _economy = GetNodeOrNull<EconomyManager>("/root/EconomyManager");
         _modules.Add(new GreenhouseModule(0, Vector2I.Zero, _baseRoot));
 
@@ -209,11 +214,29 @@ public partial class ExpansionManager : Node
 
         _baseRoot.AddChild(root);
         RemoveFace(current.Source, current.Direction);
-        _modules.Add(new GreenhouseModule(moduleId, current.Target, root));
+        _modules.Add(new GreenhouseModule(moduleId, current.Target, root) { SourceId = current.Source.Id, Direction = current.Direction });
         _nextModuleId++;
         _nextStationIndex += _stationTemplates.Count;
         LastMessage = $"Ampliación construida: {label}. Saldo: {_economy.Balance} $.";
         Notifications.Publish($"Expansión adquirida: {DirectionLabel(current.Direction)}", NoticeKind.Success);
+        return true;
+    }
+
+    public bool RestoreModule(int moduleId, Vector2I target, int sourceId, ExpansionDirection direction)
+    {
+        GreenhouseModule? source = _modules.Find(module => module.Id == sourceId);
+        if (source == null || _modules.Exists(module => module.Id == moduleId))
+        {
+            return false;
+        }
+
+        var option = new ExpansionOption(source, direction, target, ExpansionStatus.Available, 0);
+        Node3D root = BuildModuleRoot(option, moduleId, _nextStationIndex);
+        _baseRoot.AddChild(root);
+        RemoveFace(source, direction);
+        _modules.Add(new GreenhouseModule(moduleId, target, root) { SourceId = sourceId, Direction = direction });
+        _nextModuleId = System.Math.Max(_nextModuleId, moduleId + 1);
+        _nextStationIndex += _stationTemplates.Count;
         return true;
     }
 

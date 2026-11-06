@@ -51,7 +51,7 @@ func _run():
 		panel.call("Open", null)
 		await create_timer(0.8).timeout
 		check(panel.get("State") == 2, "panel abierto en " + label)
-		check(economy.call("GetBalance") == 100, "abrir el panel no modifica el saldo en " + label)
+		check(economy.call("GetBalance") == economy.get("StartingBalance"), "abrir el panel no modifica el saldo en " + label)
 
 		var frame = panel.get_child(0).get_child(1)
 		var rect = frame.get_global_rect()

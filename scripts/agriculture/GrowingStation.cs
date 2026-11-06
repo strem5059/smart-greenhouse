@@ -17,6 +17,33 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 	private Quickbar? _seedBar;
 
 	public bool IsOccupied => _plant != null;
+
+	public bool NeedsWaterNow => _plant != null && PlantedCrop != null && PlantedCrop.NeedsWater && _plant.Data.Water < 20.0f;
+
+	public bool NeedsFertilizerNow => _plant != null && PlantedCrop != null && PlantedCrop.NeedsFertilizer && _plant.Data.Nutrients < 20.0f;
+
+	public void ReceiveWater() => _plant?.AddWater(WaterAmount);
+
+	public void ReceiveNutrients() => _plant?.AddNutrients(NutrientAmount);
+
+	public CropData? PlantData => _plant?.Data;
+
+	public bool RestorePlant(string cropId, GrowthStage stage, float growth, float water, float nutrients, float health)
+	{
+		CropDefinition? crop = CropCatalog.Get(cropId);
+		if (crop == null || _plant != null || !PlantCrop(crop) || _plant == null)
+		{
+			return false;
+		}
+
+		_plant.Data.Stage = stage;
+		_plant.Data.GrowthProgress = growth;
+		_plant.Data.Water = water;
+		_plant.Data.Nutrients = nutrients;
+		_plant.Data.Health = health;
+		_plant.UpdateVisuals();
+		return true;
+	}
 	public CropData? Crop => _plant?.Data;
 	public CropDefinition? PlantedCrop => _plant?.Definition;
 

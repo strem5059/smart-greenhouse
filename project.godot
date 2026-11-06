@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Smart Greenhouse"
-run/main_scene="res://scenes/world/greenhouse.tscn"
+run/main_scene="res://scenes/menu/main_menu.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 InventoryManager="*res://scripts/inventory/InventoryManager.cs"
 GrowthSimulator="*res://scripts/agriculture/GrowthSimulator.cs"
 EconomyManager="*res://scripts/economy/EconomyManager.cs"
+SaveManager="*res://scripts/save/SaveManager.cs"
 
 [display]
 

@@ -19,7 +19,7 @@ public partial class ManagementPanel : CanvasLayer
     private const float ClosedScale = 0.92f;
     private const int StationsPerTable = 3;
 
-    private static readonly string[] PageNames = { "Resumen", "Tienda", "Almacén", "Finanzas", "Gestión", "Expansión" };
+    private static readonly string[] PageNames = { "Resumen", "Tienda", "Almacén", "Finanzas", "Gestión", "Administración", "Expansión" };
 
     private static readonly Dictionary<string, string> PageSubtitles = new()
     {
@@ -28,6 +28,7 @@ public partial class ManagementPanel : CanvasLayer
         ["Almacén"] = "Existencias y venta de cosechas",
         ["Finanzas"] = "Saldo, ingresos, gastos y movimientos",
         ["Gestión"] = "Ocupación de módulos y mesas",
+        ["Administración"] = "Reposición automática de insumos, reservas y ventas de excedentes",
         ["Expansión"] = "Amplía el invernadero dentro del límite de beta"
     };
 
@@ -38,6 +39,7 @@ public partial class ManagementPanel : CanvasLayer
         ["Almacén"] = GlyphKind.Storage,
         ["Finanzas"] = GlyphKind.Finance,
         ["Gestión"] = GlyphKind.Management,
+        ["Administración"] = GlyphKind.Finance,
         ["Expansión"] = GlyphKind.Expansion
     };
 
@@ -56,6 +58,28 @@ public partial class ManagementPanel : CanvasLayer
     private Label _message = null!;
     private Label _modulesLabel = null!;
     private ConfirmationDialog _confirm = null!;
+    private Button _buyCollector = null!;
+    private Button _buyAdmin = null!;
+    private Label _warehouseLabel = null!;
+    private VBoxContainer _collectorRows = null!;
+    private readonly List<CollectorRow> _collectorViews = new();
+    private AdministrationRobot? _admin;
+    private Label _adminStatus = null!;
+    private Label _adminFunds = null!;
+    private Label _adminPending = null!;
+    private Label _adminLog = null!;
+    private Button _adminPause = null!;
+    private Button _adminStop = null!;
+    private VBoxContainer _adminSupplies = null!;
+    private readonly List<(string Id, Label Info)> _adminSupplyRows = new();
+
+    private sealed class CollectorRow
+    {
+        public CollectorRobot Robot = null!;
+        public Label Info = null!;
+        public Button Pause = null!;
+        public Button Stop = null!;
+    }
     private System.Action? _pendingAction;
     private Tween? _tween;
     private readonly Dictionary<string, Control> _pages = new();
@@ -282,8 +306,13 @@ public partial class ManagementPanel : CanvasLayer
                 "Almacén" => BuildStorage(),
                 "Finanzas" => BuildFinance(),
                 "Gestión" => BuildManagement(),
+                "Administración" => BuildAdministration(),
                 _ => BuildExpansion()
             };
+            if (name is "Almacén" or "Gestión" or "Administración")
+            {
+                page = Scrolled(page);
+            }
             page.Visible = false;
             host.AddChild(page);
             _pages[name] = page;
@@ -495,11 +524,25 @@ public partial class ManagementPanel : CanvasLayer
         _cardFree = NewStat(grid, "Libres");
         page.AddChild(grid);
 
-        var scroll = PanelTheme.Scroll();
-        page.AddChild(scroll);
+        var collectors = PanelTheme.Column(6);
+        page.AddChild(collectors);
+        collectors.AddChild(PanelTheme.MakeLabel("ROBOTS RECOLECTORES · llevan los productos de los baúles al almacén central", 13, PanelTheme.Accent));
+        _warehouseLabel = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Text);
+        collectors.AddChild(_warehouseLabel);
+        _buyCollector = new Button { Text = $"Comprar robot recolector · {CollectorFleet.RobotPrice} $" };
+        PanelTheme.StyleButton(_buyCollector, true);
+        _buyCollector.Pressed += RequestCollectorPurchase;
+        collectors.AddChild(_buyCollector);
+        _buyAdmin = new Button();
+        PanelTheme.StyleButton(_buyAdmin, true);
+        _buyAdmin.Pressed += RequestAdministratorPurchase;
+        collectors.AddChild(_buyAdmin);
+        _collectorRows = PanelTheme.Column(4);
+        collectors.AddChild(_collectorRows);
+
         _tableRows = PanelTheme.Column(12);
         _tableRows.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        scroll.AddChild(_tableRows);
+        page.AddChild(_tableRows);
         return page;
     }
 
@@ -758,7 +801,7 @@ public partial class ManagementPanel : CanvasLayer
         {
             if (node is RobotController robot)
             {
-                _tableRows.AddChild(PanelTheme.MakeLabel($"{robot.ModuleName} · Robot: {robot.TaskName} · Carga {robot.CargoTotal}/{RobotController.Capacity} · Baúl: {robot.ChestTotal} uds", 13, PanelTheme.Accent));
+                _tableRows.AddChild(PanelTheme.MakeLabel($"{robot.ModuleName} · Robot: {robot.TaskName} · Carga {robot.CargoTotal}/{robot.CapacityLimit} · Baúl: {robot.ChestTotal} uds", 13, PanelTheme.Accent));
             }
         }
         foreach (var (module, tables) in modules)
@@ -778,6 +821,266 @@ public partial class ManagementPanel : CanvasLayer
                 tiles.AddChild(tile);
             }
         }
+
+        RefreshCollectors();
+    }
+
+    private static ScrollContainer Scrolled(Control content)
+    {
+        var scroll = PanelTheme.Scroll();
+        content.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        scroll.AddChild(content);
+        return scroll;
+    }
+
+    private void RequestAdministratorPurchase()
+    {
+        var fleet = GetTree().GetFirstNodeInGroup("collector_fleet") as CollectorFleet;
+        if (fleet == null || _economy == null || _confirm.Visible || _pendingAction != null)
+        {
+            return;
+        }
+
+        var economy = _economy;
+        _confirm.DialogText = $"Comprar el robot administrativo por {CollectorFleet.AdministratorPrice} $.\nSaldo actual: {economy.Balance} $.";
+        _pendingAction = () =>
+        {
+            fleet.PurchaseAdministrator();
+            ShowMessage(economy.LastMessage);
+            RefreshAll();
+        };
+        _confirm.PopupCentered(new Vector2I(440, 150));
+    }
+
+    private void AddAutomationSettings(Control page)
+    {
+        var sales = new CheckButton { Text = "Ventas automáticas de excedentes del almacén", ButtonPressed = true };
+        sales.Toggled += enabled => _admin?.SetAutoSell(enabled);
+        page.AddChild(sales);
+
+        var grid = new GridContainer { Columns = 3 };
+        grid.AddThemeConstantOverride("h_separation", 12);
+        grid.AddThemeConstantOverride("v_separation", 6);
+        page.AddChild(grid);
+        grid.AddChild(PanelTheme.MakeLabel("Cultivo", 13, PanelTheme.Muted));
+        grid.AddChild(PanelTheme.MakeLabel("Reserva en almacén", 13, PanelTheme.Muted));
+        grid.AddChild(PanelTheme.MakeLabel("Prioridad de venta", 13, PanelTheme.Muted));
+        int index = 0;
+        foreach (CropDefinition crop in CropCatalog.Crops)
+        {
+            index++;
+            string productId = crop.ProductId;
+            grid.AddChild(PanelTheme.MakeLabel(ItemCatalog.NameOf(productId), 13, PanelTheme.Text));
+            var reserve = NewSpin(0, 500, 1, AdministrationRobot.DefaultSaleReserve);
+            reserve.ValueChanged += value => _admin?.SetSaleReserve(productId, (int)value);
+            grid.AddChild(reserve);
+            var priority = NewSpin(1, 99, 1, index);
+            priority.ValueChanged += value => _admin?.SetSalePriority(productId, (int)value);
+            grid.AddChild(priority);
+        }
+
+        var minimumRow = new HBoxContainer();
+        minimumRow.AddThemeConstantOverride("separation", 10);
+        page.AddChild(minimumRow);
+        minimumRow.AddChild(PanelTheme.MakeLabel("Cantidad mínima acumulada para vender (unidades)", 13, PanelTheme.Muted));
+        var minimum = NewSpin(1, 10000, 1, AdministrationRobot.DefaultMinimumSaleUnits);
+        minimum.ValueChanged += value => _admin?.SetMinimumSaleUnits((int)value);
+        minimumRow.AddChild(minimum);
+
+    }
+
+    public override void _Process(double delta)
+    {
+        if (State != PanelState.Closed)
+        {
+            RefreshAdministration();
+        }
+    }
+
+    private Control BuildAdministration()
+    {
+        var page = PageColumn();
+        _adminStatus = PanelTheme.MakeLabel(string.Empty, 14, PanelTheme.Text);
+        _adminFunds = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Text);
+        _adminPending = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Muted);
+        page.AddChild(_adminStatus);
+        page.AddChild(_adminFunds);
+        page.AddChild(_adminPending);
+
+        var controls = new HBoxContainer();
+        controls.AddThemeConstantOverride("separation", 10);
+        page.AddChild(controls);
+        _adminPause = new Button();
+        PanelTheme.StyleButton(_adminPause, false);
+        _adminPause.Pressed += () => { _admin?.TogglePause(); RefreshAdministration(); };
+        controls.AddChild(_adminPause);
+        _adminStop = new Button();
+        PanelTheme.StyleButton(_adminStop, false);
+        _adminStop.Pressed += () =>
+        {
+            if (_admin != null)
+            {
+                if (_admin.IsActive) _admin.Stop(); else _admin.Start();
+            }
+
+            RefreshAdministration();
+        };
+        controls.AddChild(_adminStop);
+
+        var settings = new GridContainer { Columns = 2 };
+        settings.AddThemeConstantOverride("h_separation", 12);
+        settings.AddThemeConstantOverride("v_separation", 8);
+        page.AddChild(settings);
+        settings.AddChild(PanelTheme.MakeLabel("Multiplicador de reposición (objetivo = mínimo × multiplicador)", 13, PanelTheme.Muted));
+        var multiplier = NewSpin(1, 10, 1, AdministrationRobot.DefaultMultiplier);
+        multiplier.ValueChanged += value => _admin?.SetMultiplier((int)value);
+        settings.AddChild(multiplier);
+        settings.AddChild(PanelTheme.MakeLabel("Reserva mínima de dinero ($)", 13, PanelTheme.Muted));
+        var reserve = NewSpin(0, 1000000, 500, AdministrationRobot.DefaultReserve);
+        reserve.ValueChanged += value => _admin?.SetReserve((int)value);
+        settings.AddChild(reserve);
+
+        _adminSupplies = PanelTheme.Column(6);
+        _adminSupplies.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        page.AddChild(_adminSupplies);
+        foreach (string id in AdministrationRobot.SupplyIds)
+        {
+            var row = new HBoxContainer();
+            row.AddThemeConstantOverride("separation", 10);
+            _adminSupplies.AddChild(row);
+            var info = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Text);
+            info.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            row.AddChild(info);
+            row.AddChild(PanelTheme.MakeLabel("Mínimo", 13, PanelTheme.Muted));
+            var minimum = NewSpin(0, 200, 1, AdministrationRobot.DefaultMinimum);
+            string itemId = id;
+            minimum.ValueChanged += value => _admin?.SetMinimum(itemId, (int)value);
+            row.AddChild(minimum);
+            _adminSupplyRows.Add((id, info));
+        }
+
+        _adminLog = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Muted);
+        page.AddChild(_adminLog);
+        AddAutomationSettings(page);
+        return page;
+    }
+
+    private static SpinBox NewSpin(double min, double max, double step, double value)
+    {
+        return new SpinBox { MinValue = min, MaxValue = max, Step = step, Value = value };
+    }
+
+    private void RefreshAdministration()
+    {
+        _admin ??= GetTree().GetFirstNodeInGroup("office_administrator") as AdministrationRobot;
+        var fleet = GetTree().GetFirstNodeInGroup("collector_fleet") as CollectorFleet;
+        if (_admin == null || fleet == null || _economy == null || _inventory == null)
+        {
+            _adminStatus.Text = "Robot administrativo no comprado: cómpralo en Gestión → Robots recolectores";
+            return;
+        }
+
+        _adminStatus.Text = $"Estado: {_admin.StateName} · Última acción: {_admin.LastAction}";
+        _adminFunds.Text = $"Dinero disponible: {PanelTheme.Money(_economy.Balance)} · Reserva mínima: {PanelTheme.Money(_admin.MoneyReserve)} · Almacén central: {fleet.Warehouse.Total} uds · Ventas del robot: {PanelTheme.Money(_admin.TotalSold)} · Compras del robot: {PanelTheme.Money(_admin.TotalBought)}";
+        _adminPending.Text = _admin.Pending.Count == 0 ? "Compras pendientes: ninguna" : "Compras pendientes: " + string.Join(", ", _admin.Pending);
+        foreach (var (id, info) in _adminSupplyRows)
+        {
+            int stock = _inventory.GetQuantity(id);
+            int target = _admin.TargetFor(id);
+            string status = stock < _admin.MinimumFor(id) ? $"bajo mínimo: comprará {target - stock}" : "correcto";
+            info.Text = $"{ItemCatalog.NameOf(id)} · existencias {stock} · objetivo {target} · {status}";
+        }
+
+        _adminLog.Text = _admin.Log.Count == 0 ? "Historial: sin operaciones" : "Historial:\n" + string.Join("\n", _admin.Log);
+        _adminPause.Text = _admin.IsPaused ? "Reanudar" : "Pausar";
+        _adminPause.Disabled = !_admin.IsActive;
+        _adminStop.Text = _admin.IsActive ? "Detener" : "Iniciar";
+    }
+
+    private void RequestCollectorPurchase()
+    {
+        var fleet = GetTree().GetFirstNodeInGroup("collector_fleet") as CollectorFleet;
+        if (fleet == null || _economy == null || _confirm.Visible || _pendingAction != null)
+        {
+            return;
+        }
+
+        var economy = _economy;
+        _confirm.DialogText = $"Comprar un robot recolector por {CollectorFleet.RobotPrice} $.\nSaldo actual: {economy.Balance} $.";
+        _pendingAction = () =>
+        {
+            fleet.Purchase();
+            ShowMessage(economy.LastMessage);
+            RefreshAll();
+        };
+        _confirm.PopupCentered(new Vector2I(440, 150));
+    }
+
+    private void RefreshCollectors()
+    {
+        var fleet = GetTree().GetFirstNodeInGroup("collector_fleet") as CollectorFleet;
+        if (fleet == null)
+        {
+            return;
+        }
+
+        _buyCollector.Disabled = _economy == null || _economy.Balance < CollectorFleet.RobotPrice;
+        _buyAdmin.Text = fleet.Administrator != null ? "Robot administrativo comprado" : $"Comprar robot administrativo · {CollectorFleet.AdministratorPrice} $";
+        _buyAdmin.Disabled = fleet.Administrator != null || _economy == null || _economy.Balance < CollectorFleet.AdministratorPrice;
+        string stock = fleet.Warehouse.Total == 0
+            ? "vacío"
+            : string.Join(", ", fleet.Warehouse.Contents.Select(item => $"{ItemCatalog.NameOf(item.Key)} x{item.Value}"));
+        _warehouseLabel.Text = $"Almacén central: {fleet.Warehouse.Total} uds · {stock}";
+
+        foreach (CollectorRobot robot in fleet.Robots)
+        {
+            if (!_collectorViews.Exists(view => view.Robot == robot))
+            {
+                AddCollectorRow(robot);
+            }
+        }
+
+        foreach (CollectorRow view in _collectorViews)
+        {
+            CollectorRobot robot = view.Robot;
+            view.Info.Text = $"Recolector {robot.Id} · {robot.StateName} · {robot.LocationName} · Carga {robot.CargoTotal}/{robot.Capacity} · {robot.Speed:F1} m/s";
+            view.Pause.Text = robot.IsPaused ? "Reanudar" : "Pausar";
+            view.Pause.Disabled = !robot.IsActive;
+            view.Stop.Text = robot.IsActive ? "Detener" : "Iniciar";
+        }
+    }
+
+    private void AddCollectorRow(CollectorRobot robot)
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 10);
+        _collectorRows.AddChild(row);
+
+        var info = PanelTheme.MakeLabel(string.Empty, 13, PanelTheme.Accent);
+        info.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(info);
+
+        var pause = new Button();
+        PanelTheme.StyleButton(pause, false);
+        pause.Pressed += robot.TogglePause;
+        row.AddChild(pause);
+
+        var stop = new Button();
+        PanelTheme.StyleButton(stop, false);
+        stop.Pressed += () =>
+        {
+            if (robot.IsActive)
+            {
+                robot.Stop();
+            }
+            else
+            {
+                robot.Start();
+            }
+        };
+        row.AddChild(stop);
+
+        _collectorViews.Add(new CollectorRow { Robot = robot, Info = info, Pause = pause, Stop = stop });
     }
 
     private void RefreshExpansion()

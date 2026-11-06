@@ -14,6 +14,32 @@ public partial class InventoryManager : Node
 
     public event System.Action? Changed;
 
+    public IReadOnlyDictionary<string, int> Snapshot => _items;
+
+    public void RestoreState(IEnumerable<KeyValuePair<string, int>> items)
+    {
+        _items.Clear();
+        foreach (var (itemId, amount) in items)
+        {
+            if (amount > 0)
+            {
+                _items[itemId] = amount;
+            }
+        }
+
+        Changed?.Invoke();
+    }
+
+    public void ResetToDefaults()
+    {
+        RestoreState(new Dictionary<string, int>
+        {
+            { "lettuce_seeds", 5 },
+            { "fertilizer", 5 },
+            { "lettuce_harvested", 0 }
+        });
+    }
+
     public int GetQuantity(string itemId)
     {
         return _items.TryGetValue(itemId, out int value) ? value : 0;

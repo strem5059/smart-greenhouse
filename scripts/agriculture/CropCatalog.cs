@@ -14,17 +14,19 @@ public sealed record CropDefinition(
     float GrowthRate = GrowthSimulator.ReferenceGrowthRate,
     float NutrientConsumption = GrowthSimulator.ReferenceNutrientConsumption,
     int Yield = 1,
-    int SeedsReturned = 1);
+    int SeedsReturned = 1,
+    bool NeedsWater = true,
+    bool NeedsFertilizer = true);
 
 public static class CropCatalog
 {
     public static readonly IReadOnlyList<CropDefinition> Crops = new[]
     {
-        new CropDefinition("lettuce", "Lechuga", "Hojas verdes en roseta compacta.", "lettuce_seeds", "lettuce_harvested", 4, 12),
-        new CropDefinition("carrot", "Zanahoria", "Raíz naranja alargada con follaje fino.", "carrot_seeds", "carrot_harvested", 5, 15, GrowthRate: 10.0f),
+        new CropDefinition("lettuce", "Lechuga", "Hojas verdes en roseta compacta.", "lettuce_seeds", "lettuce_harvested", 4, 12, NeedsWater: false, NeedsFertilizer: false),
+        new CropDefinition("carrot", "Zanahoria", "Raíz naranja alargada con follaje fino.", "carrot_seeds", "carrot_harvested", 5, 15, GrowthRate: 10.0f, NeedsFertilizer: false),
         new CropDefinition("tomato", "Tomate", "Tallo alto con frutos rojos.", "tomato_seeds", "tomato_harvested", 10, 16, GrowthRate: 5.0f, NutrientConsumption: 1.0f, Yield: 2),
         new CropDefinition("cucumber", "Pepino", "Enredadera con pepinos alargados.", "cucumber_seeds", "cucumber_harvested", 8, 24, GrowthRate: 6.25f),
-        new CropDefinition("spinach", "Espinaca", "Hojas lanceoladas bajas de color verde intenso.", "spinach_seeds", "spinach_harvested", 3, 6, GrowthRate: 25.0f),
+        new CropDefinition("spinach", "Espinaca", "Hojas lanceoladas bajas de color verde intenso.", "spinach_seeds", "spinach_harvested", 3, 6, GrowthRate: 25.0f, NeedsFertilizer: false),
     };
 
     public static bool IsValid { get; }

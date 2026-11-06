@@ -467,3 +467,27 @@ Validar las cuatro direcciones encadenadas exigiría un límite mayor. Queda com
 - **Archivos:** `RobotInterpreter.cs`, `RobotController.cs`, `RobotPanel.cs`, `tests/test_robot.gd`, `tests/test_robot_agent.gd`, `tests/test_navigation.gd`.
 - **Pruebas headless:** `test_robot.gd` passed (sintaxis, función desconocida, velocidad y límites, recolectar sin activarCosecha, detención), `test_robot_agent.gd` passed (ciclo completo con el programa, sin duplicación), `test_navigation.gd` passed (rutas sin colisiones con el programa), `test_panel.gd` y `test_scene.tscn` passed.
 - **Pendiente de validación visual:** edición y ejecución del programa, velocidad visible y comportamiento del robot en el juego.
+
+---
+
+## Menú principal y persistencia local (implementado, pendiente de validación visual)
+
+- **Menú principal** (scenes/menu/main_menu.tscn, escena principal): fondo con el invernadero real (sin jugador ni HUD activos), Nueva partida, Continuar (deshabilitado sin partidas), Cargar partida, Opciones y Salir.
+- **Partidas:** lista con nombre, fecha y dinero. Eliminar pide confirmación. Partidas dañadas o de versión incompatible se marcan y no se cargan.
+- **Nueva partida:**  MXN reales (EconomyManager.StartingBalance = 100), inventario inicial, sin robots comprados.
+- **Guardado:** user://saves/<id>.json, escritura atómica (temporal y renombrado). Manual desde el menú de pausa, automático cada 5 minutos (desactivable en Opciones, guardado en user://settings.json) y al cerrar la ventana.
+- **Menú de pausa:** Esc abre Continuar, Guardar, Cargar, Volver al menú principal y Salir del juego. Cargar, volver al menú y salir piden confirmación.
+- **Contenido guardado:** saldo e historial, inventario, estaciones con cultivo, etapa, progreso, agua, nutrientes y salud, módulos expandidos, baúles, almacén central, robots agrícolas (carga, semillas, fertilizante, programa, pausa), recolectores (posición, velocidad, capacidad, carga, programa, pausa) y administrativo (configuración, totales, programa, pausa).
+- **Restauración:** reconstruye el mundo sin cobrar expansiones ni robots y sin duplicar nodos. Las tareas en curso no se reanudan (las cosechas, compras y transferencias empiezan de nuevo desde el estado guardado); el programa vuelve a empezar desde su primera instrucción. Las solicitudes entre robots pendientes tampoco se guardan.
+- **Pruebas:** 	est_save.gd cubre guardado, cambios posteriores, restauración en un mundo nuevo, robots sin duplicar, pausa conservada y archivo dañado. Pasan también las pruebas de economía, robots, interacción, abastecimiento, panel y escena.
+- **Pendiente:** validación visual del menú y del menú de pausa; verificación del autoguardado a los 5 minutos y del guardado al cerrar en partida real; flujo completo Nueva partida → jugar → Salir → Continuar.
+
+---
+
+## Release Beta — estado (parcial)
+
+- **Menú principal:** corregido. El fondo ya no contiene jugador ni HUD, el cursor queda visible en el menú y los controles del jugador no están activos hasta iniciar una partida. Prueba headless `test_menu.gd` aprobada: menú sin HUD ni jugador; Nueva partida abre el invernadero con $100 y jugador activo. El bloqueo real del cursor en partida no se puede comprobar en headless: pendiente de validación visual.
+- **Exportación Windows x64:** completada con `export_presets.cfg` (`Windows Desktop`). Runtime .NET 8 autocontenido: no requiere .NET instalado. Ejecutable de prueba en `Escritorio\SMART_GREENHOUSE_BETA\SMART_GREENHOUSE.exe` y ZIP `Escritorio\SMART_GREENHOUSE_BETA.zip`; ambos arrancan headless sin errores de script (menú y escena de invernadero cargados).
+- **Limitación:** el `.pck` incluye los archivos fuente `.cs`, porque el cargador de escenas de Godot Mono los necesita; excluirlos rompe la carga de escenas.
+- **README de distribución:** `distribution/README.md` (copiado como `LEEME.txt`).
+- **Pendiente:** validación visual del ejecutable exportado y de la entrega en GitHub.

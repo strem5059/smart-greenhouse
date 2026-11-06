@@ -72,6 +72,34 @@ func _run():
 	robot.call("StopProgram")
 	check(robot.get("IsRunning") == false, "Detener para la ejecución")
 
+	robot.call("LoadProgram", "void loop() { activarCosecha(); recolectar(); delay(10000); }")
+	robot.call("Run")
+	await create_timer(0.1).timeout
+	robot.call("TogglePause")
+	check(robot.get("IsPaused") == true and robot.get("StateName") == "Pausado", "pausar cambia el estado a Pausado")
+	var paused_at = robot.position
+	await create_timer(0.4).timeout
+	check(robot.position.distance_to(paused_at) < 0.001, "el robot pausado no se mueve")
+	check(station.get("_plant") != null, "el robot pausado no cosecha")
+	robot.call("TogglePause")
+	check(robot.get("IsPaused") == false and robot.get("StateName") != "Pausado", "reanudar quita la pausa")
+	var harvested := false
+	for i in range(60):
+		await create_timer(0.1).timeout
+		if station.get("_plant") == null:
+			harvested = true
+			break
+	check(harvested, "tras reanudar el robot completa la cosecha")
+	robot.call("StopProgram")
+	check(robot.get("IsPaused") == false and robot.get("IsRunning") == false, "detener quita la pausa y para el programa")
+
+	robot.call("SetCapacity", 50)
+	check(robot.get("CapacityLimit") == 12, "la capacidad se limita al máximo de 12")
+	robot.call("SetCapacity", 0)
+	check(robot.get("CapacityLimit") == 1, "la capacidad se limita al mínimo de 1")
+	robot.call("SetCapacity", 8)
+	check(robot.get("CapacityLimit") == 8, "la capacidad es configurable")
+
 	print("Robot test ", "passed" if failures == 0 else "FAILED")
 	quit(0 if failures == 0 else 1)
 
