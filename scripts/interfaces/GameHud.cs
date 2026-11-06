@@ -37,6 +37,7 @@ public partial class GameHud : CanvasLayer
 	private Label _seedsLabel = null!;
 	private Label _fertilizerLabel = null!;
 	private Label _harvestLabel = null!;
+	private readonly List<Label> _resourceLabels = new();
 	private PanelContainer _promptCard = null!;
 	private PanelContainer _keyBadge = null!;
 	private Label _actionLabel = null!;
@@ -149,6 +150,16 @@ public partial class GameHud : CanvasLayer
 		_seedsLabel = AddResourceRow(rows, Accent);
 		_fertilizerLabel = AddResourceRow(rows, new Color(0.95f, 0.72f, 0.3f));
 		_harvestLabel = AddResourceRow(rows, new Color(0.75f, 1.0f, 0.65f));
+		_resourceLabels.Add(_seedsLabel);
+		_resourceLabels.Add(_fertilizerLabel);
+		_resourceLabels.Add(_harvestLabel);
+		foreach (CropDefinition crop in CropCatalog.Crops)
+		{
+			if (crop.Id != "lettuce")
+			{
+				_resourceLabels.Add(AddResourceRow(rows, ItemCatalog.Get(crop.ProductId)?.IconColor ?? Accent));
+			}
+		}
 		inventory.AddChild(rows);
 		stack.AddChild(inventory);
 
@@ -270,6 +281,15 @@ public partial class GameHud : CanvasLayer
 		SetText(_seedsLabel, $"{seeds}  Semillas");
 		SetText(_fertilizerLabel, $"{fertilizer}  Fertilizante");
 		SetText(_harvestLabel, $"{harvest}  Lechugas");
+		int i = 3;
+		foreach (CropDefinition crop in CropCatalog.Crops)
+		{
+			if (crop.Id != "lettuce")
+			{
+				SetText(_resourceLabels[i], $"{_inventory.GetQuantity(crop.ProductId)}  {crop.Name}");
+				i++;
+			}
+		}
 	}
 
 	private void UpdatePrompt()
@@ -388,11 +408,7 @@ public partial class GameHud : CanvasLayer
 		_ => InfoColor
 	};
 
-	private static string CropName(string cropType) => cropType switch
-	{
-		"lettuce" => "Lechuga",
-		_ => cropType
-	};
+	private static string CropName(string cropType) => CropCatalog.Get(cropType)?.Name ?? cropType;
 
 	private static string StageName(GrowthStage stage) => stage switch
 	{

@@ -7,6 +7,7 @@ using SmartGreenhouse.Economy;
 using SmartGreenhouse.Expansion;
 using SmartGreenhouse.Inventory;
 using SmartGreenhouse.Player;
+using SmartGreenhouse.Robots;
 
 namespace SmartGreenhouse.Management;
 
@@ -73,6 +74,7 @@ public partial class ManagementPanel : CanvasLayer
 
     private readonly Dictionary<string, StatCard> _stockCards = new();
     private SpinBox _sellAmount = null!;
+    private OptionButton _sellProduct = null!;
     private Label _sellTotalLabel = null!;
     private Button _sellButton = null!;
 
@@ -343,8 +345,8 @@ public partial class ManagementPanel : CanvasLayer
         grid.AddThemeConstantOverride("h_separation", 12);
         grid.AddThemeConstantOverride("v_separation", 12);
         _cardMoney = NewStat(grid, "Dinero disponible");
-        _cardHarvest = NewStat(grid, "Lechugas cosechadas");
-        _cardSeeds = NewStat(grid, "Semillas de lechuga");
+        _cardHarvest = NewStat(grid, "Cosechas disponibles");
+        _cardSeeds = NewStat(grid, "Semillas totales");
         _cardFertilizer = NewStat(grid, "Fertilizante");
         page.AddChild(grid);
 
@@ -427,7 +429,15 @@ public partial class ManagementPanel : CanvasLayer
         page.AddChild(sale);
         var saleColumn = PanelTheme.Column(10);
         sale.AddChild(saleColumn);
-        saleColumn.AddChild(PanelTheme.MakeLabel("Vender lechugas cosechadas", 14, PanelTheme.Accent));
+        saleColumn.AddChild(PanelTheme.MakeLabel("Vender cosechas", 14, PanelTheme.Accent));
+
+        _sellProduct = new OptionButton();
+        foreach (CropDefinition crop in CropCatalog.Crops)
+        {
+            _sellProduct.AddItem(crop.Name);
+        }
+        _sellProduct.ItemSelected += _ => UpdateSellTotal();
+        saleColumn.AddChild(_sellProduct);
 
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 12);
@@ -554,16 +564,17 @@ public partial class ManagementPanel : CanvasLayer
 
         var economy = _economy;
         int quantity = (int)_sellAmount.Value;
-        if (quantity <= 0 || quantity > _inventory.GetQuantity("lettuce_harvested"))
+        if (quantity <= 0 || quantity > _inventory.GetQuantity(SellProductId()))
         {
             return;
         }
 
-        int total = quantity * economy.LettucePrice;
-        _confirm.DialogText = $"Vender {quantity} lechuga(s) por {total} $.";
+        string productId = SellProductId();
+        int total = quantity * economy.GetSalePrice(productId);
+        _confirm.DialogText = $"Vender {quantity} x {ItemCatalog.NameOf(productId)} por {total} $.";
         _pendingAction = () =>
         {
-            economy.SellLettuce(quantity);
+            economy.SellHarvest(productId, quantity);
             ShowMessage(economy.LastMessage);
             RefreshAll();
         };
@@ -577,9 +588,15 @@ public partial class ManagementPanel : CanvasLayer
         action?.Invoke();
     }
 
+    private string SellProductId()
+    {
+        int index = Mathf.Clamp(_sellProduct.Selected, 0, CropCatalog.Crops.Count - 1);
+        return CropCatalog.Crops[index].ProductId;
+    }
+
     private void UpdateSellTotal()
     {
-        int price = _economy?.LettucePrice ?? 0;
+        int price = _economy?.GetSalePrice(SellProductId()) ?? 0;
         _sellTotalLabel.Text = $"Total: {PanelTheme.Money((int)_sellAmount.Value * price)}";
     }
 
@@ -604,8 +621,16 @@ public partial class ManagementPanel : CanvasLayer
 
         _balanceLabel.Text = PanelTheme.Money(balance);
         _cardMoney.SetValue(PanelTheme.Money(balance));
-        _cardHarvest.SetValue(harvested.ToString());
-        _cardSeeds.SetValue(seeds.ToString());
+        int harvestTotal = 0;
+        int seedTotal = 0;
+        foreach (CropDefinition crop in CropCatalog.Crops)
+        {
+            harvestTotal += _inventory.GetQuantity(crop.ProductId);
+            seedTotal += _inventory.GetQuantity(crop.SeedId);
+        }
+
+        _cardHarvest.SetValue(harvestTotal.ToString());
+        _cardSeeds.SetValue(seedTotal.ToString());
         _cardFertilizer.SetValue(fertilizer.ToString());
         _occupancyLabel.Text = $"Estaciones ocupadas {occupied} de {stations.Count}";
         _occupancy.Set(occupied, stations.Count);
@@ -625,8 +650,8 @@ public partial class ManagementPanel : CanvasLayer
             }
         }
 
-        _sellAmount.MaxValue = Math.Max(1, harvested);
-        _sellButton.Disabled = harvested <= 0;
+        _sellAmount.MaxValue = Math.Max(1, _inventory.GetQuantity(SellProductId()));
+        _sellButton.Disabled = _inventory.GetQuantity(SellProductId()) <= 0;
         UpdateSellTotal();
 
         RefreshFinance();
@@ -729,6 +754,13 @@ public partial class ManagementPanel : CanvasLayer
         _cardFree.SetValue((stations.Count - occupied).ToString(), "disponibles");
 
         ClearChildren(_tableRows);
+        foreach (Node node in GetTree().GetNodesInGroup("robot"))
+        {
+            if (node is RobotController robot)
+            {
+                _tableRows.AddChild(PanelTheme.MakeLabel($"{robot.ModuleName} · Robot: {robot.TaskName} · Carga {robot.CargoTotal}/{RobotController.Capacity} · Baúl: {robot.ChestTotal} uds", 13, PanelTheme.Accent));
+            }
+        }
         foreach (var (module, tables) in modules)
         {
             var row = PanelTheme.Column(4);

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using SmartGreenhouse.Agriculture;
 using SmartGreenhouse.Interfaces;
 using SmartGreenhouse.Inventory;
 
@@ -8,8 +9,6 @@ namespace SmartGreenhouse.Economy;
 public partial class EconomyManager : Node
 {
     [Export] public int StartingBalance = 100;
-    [Export] public int LettucePrice = 12;
-    [Export] public int SeedPrice = 4;
     [Export] public int FertilizerPrice = 6;
     [Export] public int ExpansionPrice = 250;
 
@@ -57,9 +56,8 @@ public partial class EconomyManager : Node
     {
         return itemId switch
         {
-            "lettuce_seeds" => SeedPrice,
             "fertilizer" => FertilizerPrice,
-            _ => 0
+            _ => CropCatalog.FromSeed(itemId)?.SeedPrice ?? 0
         };
     }
 
@@ -89,29 +87,34 @@ public partial class EconomyManager : Node
         return true;
     }
 
-    public bool SellLettuce(int quantity)
+    public bool SellLettuce(int quantity) => SellHarvest("lettuce_harvested", quantity);
+
+    public bool SellHarvest(string productId, int quantity)
     {
         EnsureStarted();
-        if (_inventory == null || quantity <= 0)
+        int price = GetSalePrice(productId);
+        if (_inventory == null || price <= 0 || quantity <= 0)
         {
             LastMessage = "Operación no válida.";
             return false;
         }
 
-        if (!_inventory.RemoveItem("lettuce_harvested", quantity))
+        if (!_inventory.RemoveItem(productId, quantity))
         {
             LastMessage = "No hay existencias suficientes.";
-            Notifications.Publish("Sin lechugas para vender", NoticeKind.Warning);
+            Notifications.Publish("Sin cosechas para vender", NoticeKind.Warning);
             return false;
         }
 
-        int total = LettucePrice * quantity;
+        int total = price * quantity;
         SetBalance(_balance + total);
-        Record("Venta", "Lechuga", quantity, total);
-        LastMessage = $"Venta realizada: {quantity} lechuga(s) por {total} $.";
+        Record("Venta", ItemName(productId), quantity, total);
+        LastMessage = $"Venta realizada: {quantity} x {ItemName(productId)} por {total} $.";
         Notifications.Publish($"Venta realizada: +{total} $", NoticeKind.Success);
         return true;
     }
+
+    public int GetSalePrice(string productId) => CropCatalog.FromProduct(productId)?.SalePrice ?? 0;
 
     public bool TrySpend(string type, string description, int amount)
     {

@@ -1,5 +1,4 @@
 using Godot;
-using SmartGreenhouse.Agriculture;
 using SmartGreenhouse.Interfaces;
 using SmartGreenhouse.Inventory;
 
@@ -15,12 +14,13 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 	private PlantController? _plant;
 	private InventoryManager? _inventory;
 	private GrowthSimulator? _growthSimulator;
+	private Quickbar? _seedBar;
 
 	public bool IsOccupied => _plant != null;
+	public CropData? Crop => _plant?.Data;
+	public CropDefinition? PlantedCrop => _plant?.Definition;
 
 	private Quickbar? SeedBar => _seedBar ??= GetTree().GetFirstNodeInGroup("quickbar") as Quickbar;
-	private Quickbar? _seedBar;
-	public CropData? Crop => _plant?.Data;
 
 	public override void _Ready()
 	{
@@ -39,20 +39,20 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 	{
 		if (_plant == null)
 		{
-			string? seedId = SeedBar?.EquippedItemId;
-			if (seedId == null)
+			CropDefinition? crop = CropCatalog.FromSeed(SeedBar?.EquippedItemId);
+			if (crop == null)
 			{
 				return "[E] Sin semilla equipada";
 			}
 
-			return seedId == "lettuce_seeds" && _inventory != null && _inventory.HasItem(seedId, 1)
-				? "[E] Plantar lechuga"
+			return _inventory != null && _inventory.HasItem(crop.SeedId, 1)
+				? $"[E] Plantar {crop.Name.ToLowerInvariant()}"
 				: "[E] Sin semillas";
 		}
 
 		if (_plant.Data.IsMature)
 		{
-			return "[E] Cosechar lechuga";
+			return $"[E] Cosechar {CropName().ToLowerInvariant()}";
 		}
 
 		if (_plant.Data.Water < 20.0f)
@@ -97,6 +97,11 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 		GD.Print($"[Estación] Estado: {_plant.Data.Stage}, Agua: {_plant.Data.Water:F0}, Nutrientes: {_plant.Data.Nutrients:F0}, Progreso: {_plant.Data.GrowthProgress:F0}");
 	}
 
+	private string CropName()
+	{
+		return _plant?.Definition?.Name ?? "cultivo";
+	}
+
 	private void TryPlant()
 	{
 		if (_inventory == null || PlantScene == null)
@@ -111,28 +116,49 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 			return;
 		}
 
-		if (seedId != "lettuce_seeds")
+		CropDefinition? crop = CropCatalog.FromSeed(seedId);
+		if (crop == null)
 		{
-			Notifications.Publish("Cultivo no disponible", NoticeKind.Warning);
+			Notifications.Publish("Semilla no válida", NoticeKind.Warning);
 			return;
 		}
 
-		if (!_inventory.RemoveItem(seedId, 1))
+		if (!_inventory.RemoveItem(crop.SeedId, 1))
 		{
-			GD.Print("[Estación] No tienes semillas de lechuga.");
-			Notifications.Publish("Semillas insuficientes", NoticeKind.Warning);
+			Notifications.Publish($"Semillas insuficientes: {crop.Name}", NoticeKind.Warning);
 			return;
 		}
 
-		var instance = PlantScene.Instantiate<PlantController>();
-		instance.Data = new CropData();
+		if (!PlantCrop(crop))
+		{
+			_inventory.AddItem(crop.SeedId, 1);
+			return;
+		}
+		GD.Print($"[Estación] {crop.Name} plantada.");
+		Notifications.Publish($"{crop.Name} plantada", NoticeKind.Info);
+	}
+
+	public bool PlantCrop(CropDefinition crop)
+	{
+		if (_plant != null)
+		{
+			return false;
+		}
+
+		PackedScene? scene = CropCatalog.SceneFor(crop.Id) ?? PlantScene;
+		if (scene == null)
+		{
+			return false;
+		}
+
+		var instance = scene.Instantiate<PlantController>();
+		instance.Data = new CropData(crop.Id);
 		AddChild(instance);
 		instance.Position = new Vector3(0, 0.1f, 0);
 		_plant = instance;
-
+		CropVisualBuilder.Build(instance, crop.Id);
 		_growthSimulator?.RegisterPlant(_plant);
-		GD.Print("[Estación] Lechuga plantada.");
-		Notifications.Publish("Lechuga plantada", NoticeKind.Info);
+		return true;
 	}
 
 	private void WaterPlant()
@@ -161,13 +187,20 @@ public partial class GrowingStation : StaticBody3D, IInteractable
 			return;
 		}
 
+		CropDefinition? crop = _plant.Definition;
 		_growthSimulator?.UnregisterPlant(_plant);
 		_plant.QueueFree();
 		_plant = null;
-		_inventory?.AddItem("lettuce_harvested", 1);
-		_inventory?.AddItem("lettuce_seeds", 1);
-		GD.Print("[Estación] Lechuga cosechada.");
-		Notifications.Publish("+1 Lechuga", NoticeKind.Success);
-		Notifications.Publish("+1 Semilla", NoticeKind.Success);
+
+		if (crop == null)
+		{
+			return;
+		}
+
+		_inventory?.AddItem(crop.ProductId, crop.Yield);
+		_inventory?.AddItem(crop.SeedId, crop.SeedsReturned);
+		GD.Print($"[Estación] {crop.Name} cosechada.");
+		Notifications.Publish($"+{crop.Yield} {crop.Name}", NoticeKind.Success);
+		Notifications.Publish($"+{crop.SeedsReturned} semilla de {crop.Name.ToLowerInvariant()}", NoticeKind.Success);
 	}
 }

@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://c5vu877kjgyp7"]
 
+[ext_resource type="Script" uid="uid://2t1bhofnxgq" path="res://scripts/robots/Chest.cs" id="chest_script"]
 [ext_resource type="Script" uid="uid://bnnotyst3mcef" path="res://scripts/expansion/ExpansionManager.cs" id="expansion_script"]
 [ext_resource type="PackedScene" uid="uid://cufncs8ygidn2" path="res://scenes/player/player.tscn" id="ext_ae477b2c7"]
 [ext_resource type="Script" uid="uid://c8052i5po3jgy" path="res://scripts/agriculture/GrowingStation.cs" id="growing_f198e"]
 [ext_resource type="PackedScene" uid="uid://vetg8abh2bp5" path="res://scenes/crops/lettuce.tscn" id="lettuce_eaf45"]
 [ext_resource type="PackedScene" uid="uid://bv5wtdmnuymcm" path="res://scenes/office/office.tscn" id="office_inst"]
 [ext_resource type="PackedScene" uid="uid://dyxpod1iw716f" path="res://scenes/crops/pot_with_soil.tscn" id="pot_fb85a467c"]
+[ext_resource type="Script" uid="uid://5crwd83mrq3n" path="res://scripts/robots/RobotController.cs" id="robot_script"]
 
 [sub_resource type="BoxMesh" id="GlassGapMeshN"]
 size = Vector3(0.1, 5, 2.25)
@@ -1082,3 +1084,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="ExpansionManager" type="Node" parent="." unique_id=2133913487]
 script = ExtResource("expansion_script")
+
+[node name="AgroRobot" type="StaticBody3D" parent="." unique_id=2138382510]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 0, -4)
+script = ExtResource("robot_script")
+
+[node name="Chest" type="StaticBody3D" parent="." unique_id=323088021]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 0, 4)
+script = ExtResource("chest_script")

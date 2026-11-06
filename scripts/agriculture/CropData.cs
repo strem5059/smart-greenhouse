@@ -12,6 +12,15 @@ public enum GrowthStage
 
 public partial class CropData : Resource
 {
+	public CropData()
+	{
+	}
+
+	public CropData(string cropId)
+	{
+		CropType = cropId;
+	}
+
 	[Export] public string PlantId { get; set; } = string.Empty;
 	[Export] public string CropType { get; set; } = "lettuce";
 	[Export] public GrowthStage Stage { get; set; } = GrowthStage.Seed;

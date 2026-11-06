@@ -5,6 +5,7 @@ namespace SmartGreenhouse.Agriculture;
 public partial class PlantController : Node3D
 {
 	[Export] public CropData Data { get; set; } = null!;
+	public CropDefinition? Definition => CropCatalog.Get(Data.CropType);
 
 	private Node3D _seedVisual = null!;
 	private Node3D _seedlingVisual = null!;

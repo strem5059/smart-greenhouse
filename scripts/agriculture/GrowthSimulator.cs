@@ -5,6 +5,10 @@ namespace SmartGreenhouse.Agriculture;
 
 public partial class GrowthSimulator : Node
 {
+	public const float ReferenceGrowthRate = 15.0f;
+	public const float ReferenceWaterConsumption = 1.0f;
+	public const float ReferenceNutrientConsumption = 0.5f;
+
 	[Export] public float SimulationIntervalSeconds = 1.0f;
 	[Export] public float GrowthRate = 15.0f;
 	[Export] public float WaterConsumption = 1.0f;
@@ -49,12 +53,12 @@ public partial class GrowthSimulator : Node
 				continue;
 			}
 
-			TickPlant(plant.Data);
+			TickPlant(plant.Data, plant.Definition);
 			plant.UpdateVisuals();
 		}
 	}
 
-	private void TickPlant(CropData data)
+	private void TickPlant(CropData data, CropDefinition? definition)
 	{
 		if (data.IsMature)
 		{
@@ -66,9 +70,9 @@ public partial class GrowthSimulator : Node
 
 		if (hasWater && hasNutrients)
 		{
-			data.GrowthProgress += GrowthRate;
+			data.GrowthProgress += definition?.GrowthRate ?? GrowthRate;
 			data.Water -= WaterConsumption;
-			data.Nutrients -= NutrientConsumption;
+			data.Nutrients -= definition?.NutrientConsumption ?? NutrientConsumption;
 			data.Health += HealthRecoveryWhenHealthy;
 		}
 		else

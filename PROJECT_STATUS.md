@@ -361,3 +361,89 @@ Validar las cuatro direcciones encadenadas exigiría un límite mayor. Queda com
 - **Pruebas headless:** `test_panel.gd` passed (abre y cierra en 1152×648, 1280×720 y 1600×900; el marco queda dentro de la ventana; el saldo no cambia). `test_expansion.gd` y `test_scene.tscn` passed.
 - **Pendiente de validación visual:** aspecto de cada sección, legibilidad, scroll de Finanzas y Tienda, diagrama de expansión y funcionamiento real de compras y ventas desde el panel.
 - **Limitación:** las pruebas headless no comprueban solapamientos ni contenido cortado dentro del panel, solo que el marco queda dentro de la ventana.
+
+---
+
+## Subfase 3.3 — Bloque 2: diversidad agrícola (implementado, pendiente de validación visual)
+
+- **Cultivos:** lechuga, zanahoria, tomate, pepino y espinaca.
+- **Arquitectura:** `CropCatalog` con `CropDefinition` (estática) y `CropData` (estado de cada planta). Detalles en `TECHNICAL_DECISIONS.md`.
+- **Integración:** tienda con cuatro semillas nuevas (precio provisional 4 $), inventario, Quickbar, plantación con consumo de una semilla, cosecha con producto y semilla devuelta, venta genérica por producto (precio provisional 12 $).
+- **Visuales:** representación procedural por cultivo en `CropVisualBuilder`, reutilizando los grupos de etapas de `lettuce.tscn`.
+- **Escenas nuevas:** `scenes/crops/carrot.tscn`, `tomato.tscn`, `cucumber.tscn`, `spinach.tscn`, generadas desde la escena de la lechuga.
+- **Pruebas headless:**
+  - `test_crops.gd`: passed. Cubre los cinco cultivos: compra, inventario, Quickbar, plantación, consumo, tipo de cultivo, visuales, cosecha, semilla devuelta, venta y rechazo sin existencias.
+  - `test_inventory.gd`: passed. Corregido el solapamiento que aparecía al añadir cultivos (cuadrícula de 5 columnas).
+  - `test_agriculture.gd`, `test_quickbar.gd`, `test_economy.gd`, `test_scene.tscn`: passed.
+- **Limitaciones:**
+  - La madurez de los cultivos nuevos se fuerza en la prueba; no se verificó el crecimiento completo de cada uno.
+  - Todos los cultivos usan la velocidad de crecimiento de referencia; sus parámetros propios llegan con el balance del Bloque 3.
+  - Plantar cultivos nuevos en estaciones expandidas no está probado de forma explícita.
+  - Los precios de venta y de semilla de los cultivos nuevos son provisionales y no forman parte del balance aprobado.
+- **Pendiente de validación visual del supervisor:** que cada cultivo se distinga en la estación, que las etapas se vean correctas y que la tienda, el inventario y el HUD muestren los cultivos nuevos.
+
+### Bloque 2 — actualización tras el Bloque 3
+
+- Crecimiento completo de cada cultivo comprobado en tiempo real (`test_growth.gd`).
+- Plantación y cosecha de un cultivo nuevo en estación expandida comprobadas (`test_growth.gd`).
+- Inventario de cinco columnas: comprobado numéricamente que no solapa la barra a 1280×720 (`test_inventory.gd`); validación visual pendiente.
+- Pendientes visuales: cultivos, etapas, tienda, inventario y HUD.
+
+---
+
+## Subfase 3.3 — Bloque 3: balance económico (implementado, pruebas headless pasan)
+
+- **Valores aprobados** según la tabla de `TECHNICAL_DECISIONS.md`.
+- **Fuente única:** `CropDefinition` define semilla, venta, velocidad, rendimiento, semillas devueltas y consumo de nutrientes. `EconomyManager` consulta `CropCatalog`; ya no contiene precios de cultivos.
+- **Consumo de nutrientes por cultivo:** `GrowthSimulator` usa la definición del cultivo.
+- **Pruebas headless:** `test_crops.gd`, `test_growth.gd`, `test_economy.gd`, `test_agriculture.gd`, `test_quickbar.gd`, `test_inventory.gd`, `test_expansion.gd` y `test_scene.tscn` pasan.
+- **Pendiente:** validación visual del balance y de los cultivos en el juego.
+
+## Estado de la subfase 3.3
+
+- Bloque 1: completado y validado visualmente.
+- Bloque 2: implementado; pruebas automatizadas pasan; pendiente validación visual.
+- Bloque 3: implementado; pruebas automatizadas pasan; pendiente validación visual.
+- **Día 3: no cerrado.** Faltan las validaciones visuales del Bloque 2 y del Bloque 3 para cumplir los criterios de cierre.
+- **Fase 4 (Robots): no iniciada.**
+
+---
+
+## Fase de entrega — Robot agrícola programable (demostración, pendiente de validación visual)
+
+- **Robot:** `AgroRobot` (`scripts/robots/RobotController.cs`), junto a la estación `GrowingStation0`. Se abre con E.
+- **Sensor:** `leerHumedad()` devuelve el agua real del cultivo de la estación (0-100).
+- **Actuador:** `activarRiego()` / `desactivarRiego()` aplican 8 unidades de agua por segundo al cultivo real (`CropData`).
+- **Intérprete** (`scripts/robots/RobotInterpreter.cs`): subconjunto de C/C++ tipo Arduino. Soporta `void setup()`, `void loop()`, variables `float/int/bool`, `if`/`else`, comparaciones, `&&`, `||`, aritmética básica, `delay(ms)`, `Serial.begin/print/println`, `leerHumedad`, `activarRiego`, `desactivarRiego`. No ejecuta código arbitrario; los errores indican línea.
+- **Panel** (`scripts/robots/RobotPanel.cs`): editor, Validar, Ejecutar, Detener, consola y estado. ESC cierra. Bloquea al jugador mientras está abierto.
+- **Limitaciones:** no hay `leerTemperatura()` (el juego no tiene sensor de temperatura); el bucle `loop()` pausa 50 ms por iteración; sin programación por bloques; sin comunicación con hardware real.
+- **Pruebas headless:** `test_robot.gd` passed (error de sintaxis con línea, función no admitida, riego real, umbral respetado, detención). `test_scene.tscn` y `test_quickbar.gd` passed.
+- **Pendiente de validación visual:** apariencia del robot, apertura del panel, edición, consola y controles.
+
+---
+
+## MVP de entrega — robots agrícolas autónomos (headless validado)
+
+- **Ciclo:** el robot de cada módulo busca una estación madura de su propio módulo, se desplaza a ella, cosecha con la lógica existente (`GrowingStation.Interact`), replanta con la semilla devuelta, transporta hasta el baúl del módulo y deposita. Capacidad de carga: 6 unidades.
+- **Baúl:** `scripts/robots/Chest.cs`. E abre el panel; "Recoger 1" y "Recoger todo" transfieren al inventario del jugador, que sigue siendo la única fuente de cantidades. La venta usa `EconomyManager`/`ManagementPanel` existentes.
+- **Módulos:** cada módulo (base y expansiones) tiene exactamente un robot y un baúl; se crean dentro de `ExpansionManager.BuildModuleRoot`, por lo que una compra fallida no deja huérfanos. Las plantillas excluyen robots y baúles.
+- **Panel administrativo:** la pestaña Gestión muestra por módulo el robot, su tarea, su carga y el contenido del baúl.
+- **Cambio en `GrowingStation`:** `PlantCrop` separa la plantación de la semilla del inventario; el jugador y el robot la usan igual.
+- **Pruebas headless:** `test_robot_agent.gd` passed (cosecha de la madura, no de la inmadura, replantación con la semilla devuelta, depósito sin duplicar, transferencia, venta, un robot y un baúl por módulo). `test_robot.gd`, `test_expansion.gd`, `test_crops.gd`, `test_panel.gd`, `test_scene.tscn` passed.
+- **Limitaciones:**
+  - El desplazamiento es en línea recta, sin navegación ni evitación de obstáculos: el robot puede atravesar mesas visualmente.
+  - El inventario del jugador no tiene capacidad máxima (no existe en el proyecto); la transferencia desde el baúl no la limita.
+  - No hay animaciones ni estados visuales adicionales.
+- **Pendiente de validación visual:** posición del robot y del baúl en cada módulo, recorrido, depósito y transferencia desde el panel del baúl.
+
+---
+
+## Corrección de navegación del robot (headless validado)
+
+- **Solución:** `scripts/robots/AisleNavigator.cs`. Cuadrícula de 0,25 m sobre el suelo del módulo; obstáculos de mesas, canales, estaciones, baúles y columnas expandidos por el radio del robot (0,4 m); ruta A* por celdas libres. El robot sigue la ruta punto a punto (`FollowPath`) en coordenadas locales de su módulo.
+- **Acceso a las estaciones:** se elige el primer punto libre a 0,95 m de la estación; en la práctica, el pasillo entre filas de mesas.
+- **Sin ruta:** el robot no se mueve, deja un aviso en su consola y reintenta a los 5 s.
+- **Sin cambios:** cosecha, replantación, carga, baúles, expansiones y panel administrativo.
+- **Archivos:** `AisleNavigator.cs` (nuevo), `RobotController.cs`, `tests/test_navigation.gd` (nuevo), `tests/test_robot_agent.gd` (la comprobación de replantación pasa a exigir cultivo nuevo sin madurar, porque el recorrido ahora dura más).
+- **Pruebas headless:** `test_navigation.gd` passed (0 muestras con colisión en el invernadero base ni en un módulo expandido; cosecha y depósito dentro de cada módulo). `test_robot_agent.gd` passed.
+- **Limitaciones:** la ruta no evita a otros robots ni personas; no hay animación de giro; no se ha validado visualmente el recorrido.

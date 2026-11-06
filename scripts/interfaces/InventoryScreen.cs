@@ -132,7 +132,7 @@ public partial class InventoryScreen : CanvasLayer
 			title.AddThemeFontSizeOverride("font_size", 14);
 			grids.AddChild(title);
 
-			var grid = new GridContainer { Columns = 4 };
+			var grid = new GridContainer { Columns = 5 };
 			grids.AddChild(grid);
 			foreach (ItemDefinition item in ItemCatalog.Items)
 			{

@@ -5,6 +5,7 @@ using Godot;
 using SmartGreenhouse.Agriculture;
 using SmartGreenhouse.Economy;
 using SmartGreenhouse.Interfaces;
+using SmartGreenhouse.Robots;
 
 namespace SmartGreenhouse.Expansion;
 
@@ -82,7 +83,7 @@ public partial class ExpansionManager : Node
             {
                 _stationTemplates.Add(station);
             }
-            else if (child is StaticBody3D body)
+            else if (child is StaticBody3D body && child is not RobotController && child is not Chest)
             {
                 _templates.Add(body.Duplicate());
             }
@@ -265,6 +266,8 @@ public partial class ExpansionManager : Node
             root.AddChild(station);
         }
 
+        root.AddChild(new RobotController { Position = new Vector3(-7.2f, 0, -4) });
+        root.AddChild(new Chest { Name = "Chest", Position = new Vector3(-7.2f, 0, 4) });
         return root;
     }
 
